@@ -7,7 +7,7 @@
     <initial-install-p>f</initial-install-p>
     <singleton-p>f</singleton-p>
 
-    <version name="5.0d1" url="http://openacs.org/">
+    <version name="5.0d1" url="http://openacs.org/repository/download/apm/static-pages-5.0d1.apm">
     <database-support>
         <database>oracle</database>
         <database>postgresql</database>
