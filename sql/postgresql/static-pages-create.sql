@@ -24,7 +24,7 @@ create table sp_folders (
                         references sp_folders(folder_id),
         package_id	integer constraint sp_folders_package_id_fk
                         references apm_packages,
-	tree_sortkey	varchar(4000)
+	tree_sortkey	varbit
 );
 
 
@@ -58,30 +58,24 @@ create index sp_folders_tree_skey_idx on sp_folders (tree_sortkey);
 
 create function sp_folders_insert_tr () returns opaque as '
 declare
-        v_parent_sk     varchar;
-        max_key         varchar;
+        v_parent_sk     varbit default null;
+        v_max_value     integer;
 begin
-	 if new.parent_id is null then
-            select max(tree_sortkey) into max_key
+	if new.parent_id is null then
+            select max(tree_leaf_key_to_int(tree_sortkey)) into v_max_value
               from sp_folders
              where parent_id is null;
-
-            v_parent_sk := '''';
 	else
-
-	select max(tree_sortkey) into max_key 
+	  select max(tree_leaf_key_to_int(tree_sortkey)) into v_max_value 
           from sp_folders 
-         where parent_id = new.parent_id;
+          where parent_id = new.parent_id;
 
-        select coalesce(max(tree_sortkey),'''') into v_parent_sk 
+          select tree_sortkey into v_parent_sk 
           from sp_folders 
-         where folder_id = new.parent_id;
+          where folder_id = new.parent_id;
 	end if;
-        new.tree_sortkey := v_parent_sk || ''/'' || tree_next_key(max_key);
-
-
+        new.tree_sortkey := tree_next_key(v_parent_sk, v_max_value);
         return new;
-
 end;' language 'plpgsql';
 
 create trigger sp_folders_insert_tr before insert 
@@ -90,8 +84,8 @@ execute procedure sp_folders_insert_tr ();
 
 create function sp_folders_update_tr () returns opaque as '
 declare
-        v_parent_sk     varchar;
-        max_key         varchar;
+        v_parent_sk     varbit default null;
+        v_max_value     integer;
         v_rec           record;
         clr_keys_p      boolean default ''t'';
 begin
@@ -103,31 +97,27 @@ begin
 
         end if;
 
-        for v_rec in select folder_id
+        for v_rec in select folder_id, parent_id
                        from sp_folders 
-                      where tree_sortkey like new.tree_sortkey || ''%''
+                      where tree_sortkey between new.tree_sortkey and tree_right(new.tree_sortkey)
                    order by tree_sortkey
         LOOP
             if clr_keys_p then
                update sp_folders set tree_sortkey = null
-               where tree_sortkey like new.tree_sortkey || ''%'';
+               where tree_sortkey between new.tree_sortkey and tree_right(new.tree_sortkey);
                clr_keys_p := ''f'';
             end if;
             
-            select max(tree_sortkey) into max_key
+            select max(tree_leaf_key_to_int(tree_sortkey)) into v_max_value
               from sp_folders 
-              where parent_id = (select parent_id 
-                                   from sp_folders 
-                                  where folder_id = v_rec.folder_id);
+              where parent_id = v_rec.parent_id;
 
-            select coalesce(max(tree_sortkey),'''') into v_parent_sk 
+            select tree_sortkey into v_parent_sk 
               from sp_folders 
-             where folder_id = (select parent_id
-                                   from sp_folders 
-                                  where folder_id = v_rec.folder_id);
+             where folder_id = v_rec.parent_id
 
             update sp_folders 
-               set tree_sortkey = v_parent_sk || ''/'' || tree_next_key(max_key)
+               set tree_sortkey = tree_next_key(v_parent_sk, v_max_value)
              where folder_id = v_rec.folder_id;
 
         end LOOP;
@@ -609,13 +599,12 @@ create	function static_page__delete_folder (
                 v_folder_row    RECORD;
                 v_page_row      RECORD;
         begin
-                for v_folder_row in 
-                        select folder_id from (
-                                select folder_id, tree_level(tree_sortkey)  as path_depth, tree_sortkey from sp_folders
-		where tree_sortkey like ( select tree_sortkey || ''%''
-		from sp_folders
-		where folder_id = p_folder_id)
-                        ) folders order by path_depth desc
+                for v_folder_row in
+                  select s1.folder_id, tree_level(s1.tree_sortkey) as path_depth
+                  from sp_folders s1, sp_folders s2
+                  where s2.folder_id = p_folder_id
+		    and s1.tree_sortkey between s2.tree_sortkey and tree_right(s2.tree_sortkey)
+                  order by path_depth desc
                  loop
                         for v_page_row in 
                                 select static_page_id from static_pages
@@ -647,19 +636,15 @@ create	function static_page__delete_stale_items (
            -- but aren''t in sp_extant_files
                 
 	for v_stale_file_row in 
-	   select static_page_id from static_pages
-		where folder_id in (
-		   select folder_id from sp_folders
-			where tree_sortkey like (
-			   select tree_sortkey || ''%''
-				from sp_folders
-				where folder_id = v_root_folder_id )
-				)
-		and
-		   static_page_id not in (
-			select static_page_id from
-			   sp_extant_files
-				where session_id = p_session_id )
+	   select sp.static_page_id 
+           from static_pages sp, sp_folders s1, sp_folders s2
+	   where sp.folder_id = s1.folder_id
+             and s2.folder_id = v_root_folder_id
+             and s1.tree_sortkey between s2.tree_sortkey and tree_right(s2.tree_sortkey)
+	     and not exists (select 1
+                             from sp_extant_files sef
+                             where sef.session_id = p_session_id
+                             and sp.static_page_id = sef.static_page_id)
 	loop
 		PERFORM static_page__delete(v_stale_file_row.static_page_id);
 	end loop;
@@ -681,10 +666,10 @@ create	function static_page__delete_stale_items (
                                         where session_id = p_session_id
                                 )
                         ) dead,
-                        (select folder_id,tree_level(tree_sortkey) as depth, tree_sortkey from sp_folders
-		where tree_sortkey like ( select tree_sortkey || ''%''
-		from sp_folders
-		where folder_id = v_root_folder_id)
+                        (select s1.folder_id,tree_level(s1.tree_sortkey) as depth
+                         from sp_folders s1, sp_folders s2
+                         where s2.folder_id = v_root_folder_id
+                           and s1.tree_sortkey between s2.tree_sortkey and tree_right(s2.tree_sortkey)
                         ) path
                         where dead.folder_id = path.folder_id
                                 and dead.folder_id <> v_root_folder_id
@@ -716,10 +701,9 @@ create	function static_page__grant_permission (
                 if p_recursive_p = ''t'' then
                         -- For each folder that is a descendant of item_id, grant.
                         for v_folder_row in 
-                                select folder_id from sp_folders
-		where tree_sortkey like ( select tree_sortkey || ''%''
-		from sp_folders
-		where folder_id = p_item_id)
+                          select s1.folder_id from sp_folders s1, sp_folders s2
+                          where s2.folder_id = p_item_id
+                            and s1.tree_sortkey between s2.tree_sortkey and tree_right(s2.tree_sortkey)
                          loop
                                 perform acs_permission__grant_permission(
 				v_folder_row.folder_id,	-- object_id 
@@ -729,13 +713,11 @@ create	function static_page__grant_permission (
                         end loop;
                         -- For each file that is a descendant of item_id, grant.
                         for v_file_row in 
-                                select static_page_id from static_pages
-                                where folder_id in (
-                                        select folder_id from sp_folders
-		where tree_sortkey like ( select tree_sortkey || ''%''
-		from sp_folders
-		where folder_id = p_item_id)
-                                )
+                          select sp.static_page_id
+                          from static_pages sp, sp_folders s1, sp_folders s2
+                          where sp.folder_id = s1.folder_id
+                            and s2.folder_id = p_item_id
+                            and s1.tree_sortkey between s2.tree_sortkey and tree_right(s2.tree_sortkey)
                          loop
                                 perform acs_permission__grant_permission(
 				v_file_row.static_page_id,	-- object_id 
@@ -771,10 +753,9 @@ create	function static_page__revoke_permission (
                 if p_recursive_p = ''t'' then
                         -- For each folder that is a descendant of item_id, revoke.
                         for v_folder_row in 
-                                select folder_id from sp_folders
-		where tree_sortkey like ( select tree_sortkey || ''%''
-		from sp_folders
-		where folder_id = p_item_id)
+                          select s1.folder_id from sp_folders s1, sp_folders s2
+                          where s2.folder_id = p_item_id
+                            and s1.tree_sortkey between s2.tree_sortkey and tree_right(s2.tree_sortkey)
                          loop
                                 perform acs_permission__revoke_permission(
 				v_folder_row.folder_id,	-- object_id 
@@ -784,13 +765,11 @@ create	function static_page__revoke_permission (
                         end loop;
                         -- For each file that is a descendant of item_id, revoke.
                         for v_file_row in 
-                                select static_page_id from static_pages
-                                where folder_id in (
-                                        select folder_id from sp_folders
-		where tree_sortkey like ( select tree_sortkey || ''%''
-		from sp_folders
-		where folder_id = p_item_id)
-                                )
+                          select sp.static_page_id
+                          from static_pages sp, sp_folders s1, sp_folders s2
+                          where sp.folder_id = s1.folder_id
+                            and s2.folder_id = p_item_id
+                            and s1.tree_sortkey between s2.tree_sortkey and tree_right(s2.tree_sortkey)
                          loop
                                 perform acs_permission__revoke_permission(
 				v_file_row.static_page_id,	-- object_id 

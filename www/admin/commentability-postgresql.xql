@@ -17,12 +17,10 @@ case when show_comments_p = 't' then 'comments displayed' else 'comments summari
 case when p_folder.grantee_id is NULL then 'children not commentable' else 'children commentable' end as folder_permission
 
 FROM ((static_pages sp RIGHT OUTER JOIN
-  (select folder_id, tree_level(folder_id) as lev from 
- 	(select folder_id from sp_folders 
-		where tree_sortkey like ( select tree_sortkey ||'%'
-		from sp_folders
-		where folder_id = :root_folder_id )
-	) as foo
+  (select s1.folder_id, tree_level(s1.tree_sortkey) as lev
+   from sp_folders s1, sp_folders s2
+   where s2.folder_id = :root_folder_id
+     and s1.tree_sortkey between s2.tree_sortkey and tree_right(s2.tree_sortkey)
   ) as spf
  ON spf.folder_id = sp.folder_id)
   
