@@ -529,7 +529,7 @@ create	function static_page__new_folder (
 
                         -- Copy permissions from the parent:
                         for v_permission_row in 
-                                select grantee_id,privilege from acs_permissions
+                                select * from acs_permissions
                                         where object_id = p_parent_id
                          loop
                                 perform acs_permission__grant_permission(

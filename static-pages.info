@@ -34,7 +34,6 @@
             <file type="data_model" db_type="postgresql" path="sql/postgresql/static-pages-sws-drop.sql"/>
             <file type="data_model" db_type="postgresql" path="sql/postgresql/static-pages-sws.sql"/>
             <file type="package_spec" path="static-pages.info"/>
-            <file type="tcl_util" path="tcl/diff.tcl"/>
             <file type="query_file" db_type="oracle" path="tcl/static-pages-procs-oracle.xql"/>
             <file type="query_file" db_type="postgresql" path="tcl/static-pages-procs-postgresql.xql"/>
             <file type="tcl_procs" path="tcl/static-pages-procs.tcl"/>

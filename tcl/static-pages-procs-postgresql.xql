@@ -16,7 +16,7 @@
 <fullquery name="sp_sync_cr_with_filesystem.get_folder_id">
       <querytext>
 
-        select coalesce(content_item__get_id(:cumulative_path,:root_folder_id),0)
+        select coalesce(content_item__get_id(:cumulative_path,:root_folder_id,'f'),0)
 
       </querytext>
 </fullquery>
@@ -25,10 +25,15 @@
 <fullquery name="sp_sync_cr_with_filesystem.create_new_folder">
       <querytext>
                 select static_page__new_folder (
+                        NULL,
                         :directory,             -- name
                         :directory,             -- label
+                        'Static pages folder',   -- description
                         :parent_folder_id,      -- parent_id
-                        'Static pages folder'   -- description
+                        current_timestamp,
+                        NULL,
+                        NULL,
+                        NULL
                 );
       </querytext>
 </fullquery>
