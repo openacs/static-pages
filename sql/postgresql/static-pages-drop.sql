@@ -62,6 +62,7 @@ drop trigger sp_folders_insert_tr on sp_folders;
 drop trigger sp_folders_update_tr on sp_folders;
 drop function sp_folders_insert_tr();
 drop function sp_folders_update_tr();
+drop function sp_folders_get_tree_sortkey(int);
 drop table sp_folders;
 
 \i static-pages-sc-drop.sql
