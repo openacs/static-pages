@@ -13,6 +13,7 @@
         <database>postgresql</database>
     </database-support>
         <owner url="mailto:bcalef@arsdigita.com">Brandoch Calef</owner>
+        <owner url="mailto:bcalef@arsdigita.com">Brandoch Calef</owner>
         <summary>Static Pages makes it possible to search and comment on static pages.</summary>
         <release-date>2001-03-09</release-date>
         <vendor url="http://www.arsdigita.com/">ArsDigita Corporation</vendor>
@@ -78,7 +79,9 @@
             <file type="query_file" path="www/page-visit.xql"/>
         </files>
         <parameters>
-        <!-- No version parameters -->
+            <parameter datatype="string"  min_n_values="1"  max_n_values="1"  name="AllowedExtensions"  default="html htm" description="Enter the file extensions you want to have working with &quot;static-pages&quot;. Separate them with a single whitespace. (Case insensitive)."/>
+            <parameter datatype="number"  min_n_values="1"  max_n_values="1"  name="TemplatingEnabledP"  default="0" description="Set this to 1 if you want the pages that are scanned by static-pages to be templated. Otherwise set it to 0."/>
+            <parameter datatype="string"  min_n_values="1"  max_n_values="1"  name="TemplatePath"  default="/packages/static-pages/www/templates/static" description="If you want to activate templating of static pages, you must tell the system where to find the adp template. Leave out the initial / and don't forget the filename. (the path is relative to [acs_root_dir] and .adp is implied).]"/>
         </parameters>
 
     </version>
