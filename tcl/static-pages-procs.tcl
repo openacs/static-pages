@@ -473,7 +473,7 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
                 # calling static_page.new - thus the addition of mutex
                 # locking.  --atp@piskorski.com, 2001/08/27 01:20 EDT
 
-                set mime_type [sp_maybe_create_new_mime_type $sp_filename]
+                set mime_type [cr_filename_to_mime_type -create $sp_filename]
 
                 if { [catch {
                     set static_page_id [db_exec_plsql do_sp_new {}]
@@ -695,97 +695,6 @@ ad_proc -public sp_flush_page { page_id } {
     @creation-date 2001-02-23
 } {
     util_memoize_flush [list sp_get_page_info_query $page_id]
-}
-
-
-ad_proc sp_maybe_create_new_mime_type {
-    file_name
-} {
-
-    Contrary to the name, this proc does <em>not</em> ever insert a
-    new MIME type into the cr_mime_types table the way the
-    fs_maybe_create_new_mime_type proc does.  That File Storage proc
-    and the design cr_mime_types table it mucks with are fundamentally
-    flawed, and (c. Jan. 2003) there have been several major threads
-    in BBoard about that already:
-
-    <a href="http://openacs.org/forums/message-view?message_id=51830">one</a>,
-    <a href="http://openacs.org/forums/message-view?message_id=60512">two</a>,
-    <a href="http://openacs.org/forums/message-view?message_id=56310">three</a>.
-
-    And the old side-effecting implementation that inserted into
-    cr_mime_types led to some of the problems discussed in
-    <a href="http://openacs.org/bugtracker/openacs/bug?bug%5fnumber=145">Bug 145</a>.
-
-    <p>
-    The content repository <em>insists</em> that the MIME type already
-    be defined in cr_mime_types when you upload content.  Therefore,
-    first we look for a MIME type for this file extension in
-    cr_mime_types.  If we can't find a MIME type there, we might also
-    want to look in the AOLserver config file, <em>but</em>, that
-    would break things because the MIME type <em>must</em> be in
-    cr_mime_types.  If you have MIME types defined in your AOLserve
-    config file but not in cr_mime_types, you should add them to
-    cr_mime_types.
-
-    <p>
-    If no more specific MIME type for the file extension is found, we
-    return the "*/*" unknown MIME type.
-
-    <p>
-    <strong>Known Bugs:</strong>
-    <ul>
-
-      <li>If your file extension is not in cr_mime_types, your file
-      will get the default "*/*" MIME type.
-
-      <p>
-      <li>The default "*/*" MIME type is only created by
-      <code>acs-content-repository/sql/oracle/content-create.sql</code>
-      as of rev. 1.17, which should be part of the OpenACS 4.6.1
-      release but was <em>not</em> in 4.6.0.  If you don't have "*/*",
-      it is easy to add manually - for either Oracle or PostgreSQL,
-      just do:
-
-      	<blockquote><code>
-      	insert into cr_mime_types(label, mime_type, file_extension) values ('Unknown', '*/*', '');
-      	</code></blockquote>
-
-      <p>
-      <li>All use of cr_mime_types table should be replaced with the
-      new cr_extension_mime_type_map table (or equivalent), once that
-      work is done.
-
-    </ul>
-
-    <p>
-    --atp@piskorski.com, 2003/01/22 15:16 EST
-
-    @author Andrew Piskorski (atp@piskorski.com)
-    @creation-date 2002-12-15
-} {
-    set proc_name {sp_maybe_create_new_mime_type}
-    set mime_type_unknown {*/*}
-
-    set file_extension [string trimleft [file extension $file_name] "."]
-    if {[empty_string_p $file_extension]} {
-        set mime_type $mime_type_unknown
-    }
-
-    if {![db_0or1row select_mime_type {
-        select mime_type
-        from cr_mime_types
-        where file_extension = :file_extension
-    }]} {
-        set mime_type $mime_type_unknown
-
-        #set nsd_mime_type [ns_guesstype $file_name]
-        #if { ![string equal $mime_type $nsd_mime_type] } {
-        #    ns_log Warning "$proc_name: For file extension '$file_extension', the only matching MIME type in cr_mime_types is '$mime_type', but AOLserver thinks the MIME type should be '$nsd_mime_type'."
-        #}
-    }
-
-    return $mime_type
 }
 
 
