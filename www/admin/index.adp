@@ -9,5 +9,5 @@
 </p>
 
 <p>
-<a href="commentability">Change permissions</a>
+<a href="commentability">Change permissions or comment display settings</a>
 </p>
