@@ -310,7 +310,7 @@ create	function static_page__new (
 			v_storage_type,			 -- storage_type
 			FALSE,				 -- security_inherit_p
 			''STATIC_PAGES'',		-- storage_area_key
-			''static_page'',		 -- item subtype
+			''content_item'',		 -- item subtype
 			''static_page''			 -- content_type
                 );
 
