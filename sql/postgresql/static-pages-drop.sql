@@ -20,9 +20,9 @@ returns integer as '
 declare
         v_root_folder_row sp_folders.folder_id%TYPE;
 begin
-	for v_root_folder_row in (
-		select folder_id from sp_folders where parent_id is null;
-	) loop
+	for v_root_folder_row in 
+		select folder_id from sp_folders where parent_id is null
+	 loop
 		static_page__delete_folder(v_root_folder_row);
 	end loop;
         return 0;
@@ -33,13 +33,18 @@ select inline__0();
 drop function inline__0();
 
 
+-- FIXME this won't work until content_type__drop_attribute in 
+-- acs-content-repository/sql/postgresql/content-type.sql is fixed DaveB
+
 -- Delete content type 'static_page' and its attributes.
 
-select	content_type__drop_type (
-             'static_page',     -- content_type
+select content_type__drop_type (
+            'static_page',     -- content_type
               't',              -- drop_children_p
                'f'              -- drop_table_p
 );
+
+
 
 select drop_package('static_page');
 

@@ -47,10 +47,11 @@
  
 <fullquery name="sp_sync_cr_with_filesystem.do_sp_new">      
       <querytext>
-                select static_page.new(
+                select static_page__new(
+                        :parent_folder_id,       -- folder_id
                         :file,                  -- filename
-                        :page_title,            -- title
-                        :parent_folder_id       -- folder_id
+                        :page_title            -- title
+
                 );
       </querytext>
 </fullquery>
@@ -69,10 +70,13 @@
 
 <fullquery name="sp_sync_cr_with_filesystem.delete_old_files">
       <querytext>
-	    static_page__delete_stale_items(:sync_session_id,:package_id);
-
-	    delete from sp_extant_folders where session_id = :sync_session_id;
-	    delete from sp_extant_files where session_id = :sync_session_id;
+	begin
+	perform static_page__delete_stale_items(:sync_session_id,:package_id);
+--	 delete from sp_extant_folders where session_id = :sync_session_id;
+--
+	 delete from sp_extant_files where session_id = :sync_session_id;
+	return null;
+	end;
       </querytext>
 </fullquery>
 

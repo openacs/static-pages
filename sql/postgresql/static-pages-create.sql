@@ -24,8 +24,12 @@ create table sp_folders (
         parent_id	integer constraint sp_folders_parent_id_fk
                         references sp_folders(folder_id),
         package_id	integer constraint sp_folders_package_id_fk
-                        references apm_packages
+                        references apm_packages,
+	tree_sortkey	varchar(4000)
 );
+
+
+
 comment on table sp_folders is '
         Holds the folder hierarchy, mirroring the structure of the folders in
         the content repository.  Used for navigating through the static
@@ -47,6 +51,84 @@ comment on column sp_folders.package_id is '
 --
 create index sp_folders_parent_id_idx on sp_folders(parent_id);
 create index sp_folders_package_id_idx on sp_folders(package_id);
+
+--tree_sortkey index DaveB
+create index sp_folders_tree_skey_idx on sp_folders (tree_sortkey);
+
+-- tree_sortkey triggers DaveB
+
+create function sp_folders_insert_tr () returns opaque as '
+declare
+        v_parent_sk     varchar;
+        max_key         varchar;
+begin
+        select max(tree_sortkey) into max_key 
+          from sp_folders 
+         where parent_id = new.parent_id;
+
+        select coalesce(max(tree_sortkey),'''') into v_parent_sk 
+          from sp_folders 
+         where folder_id = new.folder_id;
+
+        new.tree_sortkey := v_parent_sk || ''/'' || tree_next_key(max_key);
+
+        return new;
+
+end;' language 'plpgsql';
+
+create trigger sp_folders_insert_tr before insert 
+on sp_folders for each row 
+execute procedure sp_folders_insert_tr ();
+
+create function sp_folders_update_tr () returns opaque as '
+declare
+        v_parent_sk     varchar;
+        max_key         varchar;
+        v_rec           record;
+        clr_keys_p      boolean default ''t'';
+begin
+        if new.folder_id = old.folder_id and 
+           ((new.parent_id = old.parent_id) or 
+            (new.parent_id is null and old.parent_id is null)) then
+
+           return new;
+
+        end if;
+
+        for v_rec in select folder_id
+                       from sp_folders 
+                      where tree_sortkey like new.tree_sortkey || ''%''
+                   order by tree_sortkey
+        LOOP
+            if clr_keys_p then
+               update sp_folders set tree_sortkey = null
+               where tree_sortkey like new.tree_sortkey || ''%'';
+               clr_keys_p := ''f'';
+            end if;
+            
+            select max(tree_sortkey) into max_key
+              from sp_folders 
+              where parent_id = (select parent_id 
+                                   from sp_folders 
+                                  where folder_id = v_rec.folder_id);
+
+            select coalesce(max(tree_sortkey),'''') into v_parent_sk 
+              from sp_folders 
+             where folder_id = (select parent_id
+                                   from sp_folders 
+                                  where folder_id = v_rec.folder_id);
+
+            update sp_folders 
+               set tree_sortkey = v_parent_sk || ''/'' || tree_next_key(max_key)
+             where folder_id = v_rec.folder_id;
+
+        end LOOP;
+
+        return new;
+
+end;' language 'plpgsql';
+-- end of tree_sortkey triggers DaveB
+
 
 -- The title and content of each page will go into cr_revisions.  Here
 -- we record the filename.
@@ -131,8 +213,9 @@ comment on column sp_extant_folders.folder_id is '
 ';
 
 -- Here's where we get our session_ids:
-create sequence sp_session_id_seq;
-create view sp_session_id_sequence as select nextval('sp_session_id_seq') as nextval;
+
+create sequence sp_session_id_sequence;
+create view sp_session_id_seq as select nextval('sp_session_id_sequence') as nextval;
 
 
 -- this also creates the acs_object type
@@ -159,6 +242,7 @@ create view sp_session_id_sequence as select nextval('sp_session_id_seq') as nex
 
 
 
+-- create or replace package body static_page as
 -- create or replace package body static_page as
 create	function static_page__new (
                 integer, 	-- static_page_id	in static_pages.static_page_id%TYPE
@@ -190,39 +274,49 @@ create	function static_page__new (
                 p_context_id            alias for $10;
 
                 v_item_id	        static_pages.static_page_id%TYPE;
-                v_permission_row        acs_permissions%ROWTYPE;
+                v_permission_row        RECORD;
+		v_revision_id		integer;
+		v_is_live		boolean default ''t'';
+		v_mime_type		cr_revisions.mime_type%TYPE default ''text/html'';
+		v_storage_type		cr_items.storage_type%TYPE default ''text'';
         begin
                 -- Create content item; this also makes the content revision.
                 -- One might be tempted to set the content_type to static_page,
                 -- But this would confuse site-wide-search, which expects to
                 -- see a content_type of content_revision.
+		
                 v_item_id := content_item__new(
                         p_static_page_id,               -- item_id
-                        p_folder_id,                    -- parent_id
-                        p_filename,                     -- name
+			p_filename,                     -- name		
+			p_folder_id,                    -- parent_id
                         p_title,                        -- title
-                        ''text/html'',                  -- mime_type
                         p_creation_date,                -- creation_date
                         p_creation_user,                -- creation_user
-                        p_creation_ip,                  -- creation_ip
                         p_context_id,                   -- context_id
-                        ''t'',                          -- is_live
-                        p_content                       -- data
+                        p_creation_ip,                  -- creation_ip
+                        v_is_live,                          -- is_live
+                        v_mime_type,                  -- mime_type
+			p_content,                       -- text
+			v_storage_type,			 -- storage_type
+			FALSE				 -- security_inherit_p
                 );
+
 
                 -- We want to be able to have non-commentable folders below
                 -- commentable folders.  We can''t do this if we leave security
                 -- inheritance enabled.
                 --
-                update acs_objects set security_inherit_p = ''f''
-                        where object_id = v_item_id;
+-- uses overloaded content_item__new and acs_object__new to set
+-- security_inherit_p to ''f'' DaveB
+--                update acs_objects set security_inherit_p = ''f''
+--                        where object_id = v_item_id;
 
                 -- Copy permissions from the parent:
-                for v_permission_row in (
+                for v_permission_row in 
                         select grantee_id,privilege from acs_permissions
-                                where object_id = p_folder_id;
-                ) loop
-                        acs_permission__grant_permission(
+                                where object_id = p_folder_id
+                 loop
+                        perform acs_permission__grant_permission(
                                 v_item_id,                      -- object_id
                                 v_permission_row.grantee_id,    -- grantee_id
                                 v_permission_row.privilege      -- privilege
@@ -242,6 +336,37 @@ create	function static_page__new (
                 return v_item_id;
 end;' language 'plpgsql';
 
+create	function static_page__new (
+
+                integer, 	-- folder_id	in sp_folders.folder_id%TYPE,
+                varchar, 	-- filename	in static_pages.filename%TYPE default null,
+                varchar 	-- title	in cr_revisions.title%TYPE default null
+        ) returns integer as '
+	declare
+                p_folder_id             alias for $1;
+                p_filename              alias for $2;
+                p_title                 alias for $3;
+               
+	        v_static_page_id	static_pages.static_page_id%TYPE;	       
+                v_item_id	        static_pages.static_page_id%TYPE;
+
+        begin
+		return static_page__new (
+			   NULL,	       -- static_page_id
+			   p_folder_id,	       -- folder_id
+			   p_filename,	       -- filename
+			   p_title,	       -- title
+			   NULL,	       -- content
+			   ''t'',	       -- show_comments_p
+			   now(),	       -- creation_date
+			   NULL,	       -- creation_user
+			   NULL,	       -- creation_ip
+			   NULL		       -- conext_id
+			   );
+	       
+end;' language 'plpgsql';
+
+
 create	function static_page__delete (
                 integer         -- static_page_id in static_pages.static_page_id%TYPE
         ) returns integer as '
@@ -255,25 +380,25 @@ create	function static_page__delete (
                 -- Drop all comments on this page.  general-comments doesn''t have
                 -- a comment.delete() function, so I just do this (see the
                 -- general-comments drop script):
-                for v_comment_row in (
+                for v_comment_row in 
                         select comment_id from general_comments
-                        where object_id = p_static_page_id;
-                ) loop
+                        where object_id = p_static_page_id
+                 loop
                         delete from images
                         where image_id in (
                                 select latest_revision
                                 from cr_items
                                 where parent_id = v_comment_row
-                        );
+                       );
 
-                        acs_message__delete(v_comment_row);
+                        PERFORM acs_message__delete(v_comment_row);
                 end loop;
 
                 -- Delete the page.
                 -- WE SHOULDN''T NEED TO DO THIS: CONTENT_ITEM.DELETE SHOULD TAKE CARE OF
                 -- DELETING FROM STATIC PAGES.
                 delete from static_pages where static_page_id = p_static_page_id;
-                content_item__delete(p_static_page_id);
+                PERFORM content_item__delete(p_static_page_id);
         return 0;
 end;' language 'plpgsql';
 
@@ -294,23 +419,31 @@ create	function static_page__get_root_folder (
                 );
 
                 if v_folder_exists_p = 0 then
+
                         v_folder_id := static_page__new_folder (
-                                ''sp_root'',      -- name
-                                ''sp_root''       -- label
+                                null,
+				''sp_root'',      -- name
+                                ''sp_root'',       -- label
+				null,
+				null,
+				null,
+				null,
+				null,
+				null
                         );
 
                         update sp_folders
                                 set package_id = p_package_id
                                 where folder_id = v_folder_id;
 
-                        acs_permission__grant_permission (
+                        PERFORM acs_permission__grant_permission (
                                 v_folder_id,                            -- object_id
                                 acs__magic_object_id(''the_public''),   -- grantee_id
                                 ''general_comments_create''             -- privilege
                         );
                         -- The comments will inherit read permission from the pages,
                         -- so the public should be able to read the static pages.
-                        acs_permission__grant_permission (
+                        PERFORM acs_permission__grant_permission (
                                 v_folder_id,                            -- object_id
                                 acs__magic_object_id(''the_public''),   -- grantee_id
                                 ''read''                                  -- privilege
@@ -373,13 +506,14 @@ create	function static_page__new_folder (
                 v_folder_id := content_folder__new (
                         p_name,            -- name
                         p_label,           -- label
-                        p_folder_id,       -- folder_id
+                        p_description,     -- description		
                         v_parent_id,       -- parent_id
-                        p_description,     -- description
+                        p_context_id,      -- context_id
+			p_folder_id,       -- folder_id
                         v_creation_date,   -- creation_date
                         p_creation_user,   -- creation_user
-                        p_creation_ip,     -- creation_ip
-                        p_context_id       -- context_id
+                        p_creation_ip     -- creation_ip
+
                 );
 
                 if p_parent_id is not null then
@@ -394,11 +528,11 @@ create	function static_page__new_folder (
                                 where object_id = v_folder_id;
 
                         -- Copy permissions from the parent:
-                        for v_permission_row in (
+                        for v_permission_row in 
                                 select grantee_id,privilege from acs_permissions
-                                        where object_id = p_parent_id;
-                        ) loop
-                                acs_permission__grant_permission(
+                                        where object_id = p_parent_id
+                         loop
+                                perform acs_permission__grant_permission(
                                         v_folder_id,                    -- object_id
                                         v_permission_row.grantee_id,    -- grantee_id
                                         v_permission_row.privilege      -- privilege
@@ -410,17 +544,20 @@ create	function static_page__new_folder (
 
                 -- if it''s a root folder, allow it to contain static pages and
                 -- other folders (subfolders will inherit these properties)
-                        content_folder__register_content_type (
+                PERFORM  content_folder__register_content_type (
                                 v_folder_id,              -- folder_id
-                                ''static_page''           -- content_type
+                                ''static_page'',           -- content_type
+				''f''
                         );
-                        content_folder__register_content_type (
+                PERFORM  content_folder__register_content_type (
                                 v_folder_id,            -- folder_id
-                                ''content_revision''      -- content_type
+                                ''content_revision'',      -- content_type
+				''f''
                         );
-                        content_folder__register_content_type (
+                PERFORM  content_folder__register_content_type (
                                 v_folder_id,            -- folder_id
-                                ''content_folder''      -- content_type
+                                ''content_folder'',      -- content_type
+				''f''
                         );
                 end if;
 
@@ -435,22 +572,23 @@ create	function static_page__delete_folder (
                 v_folder_row    sp_folders.folder_id%TYPE;
                 v_page_row      static_pages.static_page_id%TYPE;
         begin
-                for v_folder_row in (
+                for v_folder_row in 
                         select folder_id from (
-                                select folder_id,level as path_depth from sp_folders
-                                start with folder_id = p_folder_id
-                                connect by parent_id = prior folder_id;
+                                select folder_id, tree_level(''folder_id'')  as path_depth from sp_folders
+		where tree_sortkey like ( select tree_sortkey || ''%''
+		from sp_folders
+		where folder_id = p_folder_id)
                         ) order by path_depth desc
-                ) loop
-                        for v_page_row in (
+                 loop
+                        for v_page_row in 
                                 select static_page_id from static_pages
-                                where folder_id = v_folder_row;
-                        ) loop
+                                where folder_id = v_folder_row
+                         loop
                                 static_page__delete(v_page_row);
                         end loop;
 
                         delete from sp_folders where folder_id = v_folder_row;
-                        content_folder__delete(v_folder_row);
+                        PERFORM content_folder__delete(v_folder_row);
                 end loop;
 end;' language 'plpgsql';
 
@@ -462,27 +600,34 @@ create	function static_page__delete_stale_items (
                 p_session_id	        alias for $1;
                 p_package_id	        alias for $2;
                 v_root_folder_id	sp_folders.folder_id%TYPE;
-		v_stale_file_row        static_pages.static_page_id%TYPE;
-		v_stale_folder_row      sp_folders.folder_id%TYPE;
+		v_stale_file_row        static_pages%ROWTYPE;
+		v_stale_folder_row      sp_folders%ROWTYPE;
         begin
                 v_root_folder_id := static_page__get_root_folder(p_package_id);
 
                 -- First delete all files that are descendants of the root folder
-                -- but aren''t in sp_extant_files:
-                --
-                for v_stale_file_row in (
+                -- but aren''t in sp_extant_files
+                
+                for v_stale_file_row in 
                         select static_page_id from static_pages
-                        where folder_id in (
-                                select folder_id from sp_folders
-                                start with folder_id = v_root_folder_id
-                                connect by parent_id = prior folder_id
-                        ) and static_page_id not in (
-                                select static_page_id
-                                from sp_extant_files
-                                where session_id = p_session_id
-                        );
-                ) loop
-                        static_page__delete(v_stale_file_row);
+			where static_page_id not in (
+			      select static_page_id
+			       from sp_extant_files
+			       where session_id = p_session_id
+			       )
+			
+--                        where folder_id in (
+--                                select folder_id from sp_folders
+--		where tree_sortkey like ( select tree_sortkey || ''%''
+--		from sp_folders
+--		where folder_id = v_root_folder_id)
+--                       ) and static_page_id not in (
+--                                select static_page_id
+--                                from sp_extant_files
+--                               where session_id = p_session_id
+--                        )
+                 loop
+                       PERFORM static_page__delete(v_stale_file_row);
                 end loop;
 
                 -- Now delete all folders that aren''t in sp_extant_folders.  There are two
@@ -493,7 +638,7 @@ create	function static_page__delete_stale_items (
                 -- show up in the filesystem search, so it will be missing from
                 -- sp_extant_folders.
                 --
-                for v_stale_folder_row in (
+                for v_stale_folder_row in 
                         select dead.folder_id from
                         (select folder_id from sp_folders
                                 where (folder_id) not in (
@@ -502,22 +647,23 @@ create	function static_page__delete_stale_items (
                                         where session_id = p_session_id
                                 )
                         ) dead,
-                        (select folder_id,level as depth from sp_folders
-                                start with folder_id = v_root_folder_id
-                                connect by parent_id = prior folder_id
+                        (select folder_id,tree_level(''folder_id'') as depth from sp_folders
+		where tree_sortkey like ( select tree_sortkey || ''%''
+		from sp_folders
+		where folder_id = v_root_folder_id)
                         ) path
                         where dead.folder_id = path.folder_id
                                 and dead.folder_id <> v_root_folder_id
-                        order by path.depth desc;
-                ) loop
+                        order by path.depth desc
+                 loop
                         delete from sp_folders
                         where folder_id = v_stale_folder_row;
 
-                        content_folder__delete(v_stale_folder_row);
+                        perform content_folder__delete(v_stale_folder_row);
                 end loop;
 	return 0;
 end;' language 'plpgsql';
-
+ 
 create	function static_page__grant_permission (
                 integer,	-- item_id in acs_permissions.object_id%TYPE,
                 integer,	-- grantee_id	in acs_permissions.grantee_id%TYPE,
@@ -534,26 +680,28 @@ create	function static_page__grant_permission (
         begin
                 if recursive_p = ''t'' then
                         -- For each folder that is a descendant of item_id, grant.
-                        for v_folder_row in (
+                        for v_folder_row in 
                                 select folder_id from sp_folders
-                                start with folder_id = p_item_id
-                                connect by parent_id = prior folder_id;
-                        ) loop
-                                acs_permission__grant_permission(
+		where tree_sortkey like ( select tree_sortkey || ''%''
+		from sp_folders
+		where folder_id = p_item_id)
+                         loop
+                                perform acs_permission__grant_permission(
 				v_folder_row,		-- object_id 
 				p_grantee_id,		-- grantee_id
 				p_privilege		-- privilege 
                                 );
                         end loop;
                         -- For each file that is a descendant of item_id, grant.
-                        for file_row in (
+                        for file_row in 
                                 select static_page_id from static_pages
                                 where folder_id in (
                                         select folder_id from sp_folders
-                                        start with folder_id = p_item_id
-                                        connect by parent_id = prior folder_id
-                                );
-                        ) loop
+		where tree_sortkey like ( select tree_sortkey || ''%''
+		from sp_folders
+		where folder_id = p_item_id)
+                                )
+                         loop
                                 acs_permission__grant_permission(
 				v_file_row,		-- object_id 
 				p_grantee_id,		-- grantee_id
@@ -561,7 +709,7 @@ create	function static_page__grant_permission (
                                 );
                         end loop;
                 else
-                        acs_permission__grant_permission(
+                        perform acs_permission__grant_permission(
 				p_item_id,		-- object_id 
 				p_grantee_id,		-- grantee_id
 				p_privilege		-- privilege 
@@ -586,34 +734,36 @@ create	function static_page__revoke_permission (
         begin
                 if p_recursive_p = ''t'' then
                         -- For each folder that is a descendant of item_id, revoke.
-                        for v_folder_row in (
+                        for v_folder_row in 
                                 select folder_id from sp_folders
-                                start with folder_id = p_item_id
-                                connect by parent_id = prior folder_id;
-                        ) loop
-                                acs_permission__revoke_permission(
+		where tree_sortkey like ( select tree_sortkey || ''%''
+		from sp_folders
+		where folder_id = p_item_id)
+                         loop
+                                perform acs_permission__revoke_permission(
 				v_folder_row,		-- object_id 
 				p_grantee_id,		-- grantee_id
 				p_privilege		-- privilege 
                                 );
                         end loop;
                         -- For each file that is a descendant of item_id, revoke.
-                        for v_file_row in (
+                        for v_file_row in 
                                 select static_page_id from static_pages
                                 where folder_id in (
                                         select folder_id from sp_folders
-                                        start with folder_id = p_item_id
-                                        connect by parent_id = prior folder_id;
+		where tree_sortkey like ( select tree_sortkey || ''%''
+		from sp_folders
+		where folder_id = p_item_id)
                                 )
-                        ) loop
-                                acs_permission__revoke_permission(
+                         loop
+                                perform acs_permission__revoke_permission(
 				v_file_row,		-- object_id 
 				p_grantee_id,		-- grantee_id
 				p_privilege		-- privilege 
                                 );
                         end loop;
                 else
-                        acs_permission__revoke_permission(
+                        perform acs_permission__revoke_permission(
 				p_item_id,		-- object_id 
 				p_grantee_id,		-- grantee_id
 				p_privilege		-- privilege 
