@@ -76,6 +76,7 @@
             <file type="documentation" path="www/doc/xml/requirements.xml"/>
             <file type="content_page" path="www/index.tcl"/>
             <file type="content_page" path="www/page-visit.tcl"/>
+            <file type="content_page" path="www/templates/static.adp"/>
             <file type="query_file" path="www/page-visit.xql"/>
         </files>
         <parameters>
