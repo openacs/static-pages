@@ -12,24 +12,31 @@ ad_page_contract {
     file_items:multirow
 }
 
+
 # sp_sync_cr_with_filesystem callbacks to fill file_items with info.
 #
 proc sp_old_item { path id } {
     upvar file_items file_items
-    multirow append file_items $path "unchanged"
+    multirow append file_items $path "unchanged" {}
 }
 proc sp_new_item { path id } {
     upvar file_items file_items
-    multirow append file_items $path "added"
+    multirow append file_items $path "added" {}
 }
 proc sp_changed_item { path id } {
     upvar file_items file_items
-    multirow append file_items $path "updated"
+    multirow append file_items $path "updated" {}
     # The title may have changed:
     sp_flush_page $id
 }
 
-multirow create file_items path status
+proc sp_error_item { path id msg } {
+    upvar file_items file_items
+    multirow append file_items $path {<strong>Error:</strong>} \
+        "<blockquote>$msg</blockquote>"
+}
+
+multirow create file_items path status status_msg
 
 set title "Filesystem search"
 set context [list $title]
@@ -40,6 +47,7 @@ sp_sync_cr_with_filesystem \
 	-file_unchanged_proc sp_old_item \
 	-file_add_proc sp_new_item \
 	-file_change_proc sp_changed_item \
+        -file_read_error_proc sp_error_item \
 	-folder_add_proc sp_new_item \
 	-folder_unchanged_proc sp_old_item \
 	"[acs_root_dir]/www" $root_folder_id
