@@ -752,6 +752,37 @@ ad_proc -public sp_package_key_is {} {
 }
 
 
+ad_proc -private sp_package_url {package_key} {
+   <p>Given a package key, return a URL of a mounted
+   package instance. If there is more than one instance
+   of the package mounted, the one with the lowest
+   <code>package_id</code> will be returned. If the
+   package is not instantiated or not mounted anywhere,
+   an error is raised. The proc is meant to be memoized.
+   </p>
+} {
+    set proc_name {sp_package_url}
+
+    set found_p [db_0or1row get_any_package_instance {
+        select min(package_id) as package_id
+        from apm_packages
+        where package_key = :package_key
+    }]
+
+    if { !$found_p } {
+        error "$proc_name: the '$package_key' package is not instantiated."
+    }
+
+    set found_p [db_0or1row get_mount_point {}]
+
+    if { !$found_p } {
+        error "$proc_name: the '$package_key' package is not mounted."
+    }
+
+    return $url
+}
+
+
 ad_proc -public sp_serve_html_page { } {
     Registered proc to serve up static pages.
 

@@ -176,4 +176,13 @@ limit 1
 </fullquery>
 
 
+<fullquery name="sp_package_url.get_mount_point">
+<querytext>
+select site_node__url(min(node_id)) as url
+from site_nodes
+where object_id = :package_id
+</querytext>
+</fullquery>
+
+
 </queryset>
