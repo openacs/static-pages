@@ -14,7 +14,7 @@ create or replace	function static_page__new (
                 varchar, 	-- title	in cr_revisions.title%TYPE default null,
                 text,           -- content	in cr_revisions.content%TYPE default null,
                 boolean, 	-- show_comments_p	in static_pages.show_comments_p%TYPE default 't',
-                timestamp, 	-- creation_date	in acs_objects.creation_date%TYPE
+                timestamptz, 	-- creation_date	in acs_objects.creation_date%TYPE
                            	--             default sysdate,
                 integer, 	-- creation_user	in acs_objects.creation_user%TYPE
                          	--               default null,
@@ -256,7 +256,7 @@ create or replace	function static_page__new_folder (
                 varchar,        -- label	in cr_folders.label%TYPE,
                 text,           -- description	in cr_folders.description%TYPE default null,
                 integer,        -- parent_id	in cr_items.parent_id%TYPE default null,
-                timestamp,      -- creation_date	in acs_objects.creation_date%TYPE
+                timestamptz,    -- creation_date	in acs_objects.creation_date%TYPE
                                 --        default sysdate,
                 integer,        -- creation_user	in acs_objects.creation_user%TYPE
                                 --        default null,

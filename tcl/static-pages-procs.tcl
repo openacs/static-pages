@@ -4,7 +4,7 @@ ad_library {
 
     @author Brandoch Calef (bcalef@arsdigita.com)
     @creation-date 2001-01-22
-    @cvs-id $Id$
+    @cvs-id static-pages-procs.tcl,v 1.11.2.13 2003/02/06 13:05:51 jeffd Exp
 }
 
 
@@ -246,10 +246,7 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
 
     ns_mutex lock $mutex
 
-    if { ![nsv_array exists $nsv] } {
-        ns_mutex unlock $mutex
-        error "nsv array '$nsv' does not exist!"
-    } elseif { ![nsv_exists $nsv $package_id] } {
+    if { ![nsv_exists $nsv $package_id] } {
         # The package_id isn't in the array yet at all, so another copy
         # is not running.
         set other_start_time {}
@@ -266,7 +263,6 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
     }
 
     ns_mutex unlock $mutex
-    ns_log Notice "atp: $proc_name: other_start_time: '$other_start_time'"
 
     if { ! $run_p } {
         # Another copy is running, must abort:
@@ -379,7 +375,6 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
                     set mesg "$proc_name: Error reading file: '$file':  [ns_quotehtml $errmsg]"
                     ns_log Error $mesg
                     if { ![empty_string_p $file_read_error_proc] } {
-                        ns_log Notice "$proc_name: about to run file_read_error_proc:"
                         uplevel $stack_depth [list $file_read_error_proc $file $static_page_id $mesg]
                     }
                     continue
@@ -434,6 +429,7 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
 		}
 	    } else {
                 # The file is NOT in the db yet at all:
+                set static_page_id {}
 
 		# Try to extract a title:
 		if { [catch {
@@ -450,7 +446,6 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
                     set mesg "$proc_name: Error reading file: '$file':  [ns_quotehtml $errmsg]"
                     ns_log Error $mesg
                     if { ![empty_string_p $file_read_error_proc] } {
-                        ns_log Notice "$proc_name: about to run file_read_error_proc:"
                         uplevel $stack_depth [list $file_read_error_proc $file $static_page_id $mesg]
                     }
                     continue
@@ -475,18 +470,34 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
                 # calling static_page.new - thus the addition of mutex
                 # locking.  --atp@piskorski.com, 2001/08/27 01:20 EDT
 
-                set mime_type [sp_maybe_create_new_mime_type $sp_filename]
-		set static_page_id [db_exec_plsql do_sp_new {}]
-		# Check if -blobs [list $file_contents] would be faster:
-		db_dml insert_file_contents {} -blob_files [list $file]
+                set mime_type [cr_filename_to_mime_type -create $sp_filename]
 
-		if { [string length $file_add_proc] > 0 } {
-		    uplevel $stack_depth "$file_add_proc $file $static_page_id"
-		}
-		db_dml insert_file {
-		    insert into sp_extant_files (session_id,static_page_id)
-		    values (:sync_session_id,:static_page_id)
-		}
+                if { [catch {
+                    set static_page_id [db_exec_plsql do_sp_new {}]
+                } errmsg] } {
+                    # Something failed:
+
+                    set mesg "$proc_name: do_sp_new failed for file '$file' with error:  [ns_quotehtml $errmsg]"
+                    ns_log Error $mesg
+                    if { ![empty_string_p $file_read_error_proc] } {
+                        uplevel $stack_depth [list $file_read_error_proc $file $static_page_id $mesg]
+                    }
+                    continue
+
+                } else {
+                    # Everything is ok:
+
+                    # Check if -blobs [list $file_contents] would be faster:
+                    db_dml insert_file_contents {} -blob_files [list $file]
+
+                    if { [string length $file_add_proc] > 0 } {
+                        uplevel $stack_depth "$file_add_proc $file $static_page_id"
+                    }
+                    db_dml insert_file {
+                        insert into sp_extant_files (session_id,static_page_id)
+                        values (:sync_session_id,:static_page_id)
+                    }
+                }
 	    }
 	}
     }
@@ -681,73 +692,6 @@ ad_proc -public sp_flush_page { page_id } {
     @creation-date 2001-02-23
 } {
     util_memoize_flush [list sp_get_page_info_query $page_id]
-}
-
-
-ad_proc sp_maybe_create_new_mime_type {
-    file_name
-} {
-    This proc should be identical to fs_maybe_create_new_mime_type
-    from the file-storage package.  However, we don't want to depend
-    on file-storage being loaded, so if it isn't, define our own
-    implementation here.  --atp@piskorski.com, 2002/12/15 19:34 EST
-
-    <p>
-    The content repository expects the MIME type to already be defined
-    when you upload content.  We use this procedure to add a new type
-    when we encounter something we haven't seen before.
-
-    @author Andrew Piskorski (atp@piskorski.com)
-    @creation-date 2002-12-15
-} {
-    set func {fs_maybe_create_new_mime_type}
-
-    if { [nsv_exists api_proc_doc $func] ||
-         ![empty_string_p [namespace eval :: [list info procs $func]]]
-     } {
-        # The file-storage version of this proc exists, use it:
-        return [list $func $file_name]
-
-    } else {
-        # Fall back to local implementation:
-
-        set file_extension [string trimleft [file extension $file_name] "."]
-        if {[empty_string_p $file_extension]} {
-            return "*/*"
-        }
-
-        # TODO: This insert may fail due to a race condition.  Should be
-        # locking the cr_mime_types table first:
-        # --atp@piskorski.com, 2001/08/23 20:20 EDT
-
-        if {![db_0or1row select_mime_type {
-            select mime_type
-            from cr_mime_types
-            where file_extension = :file_extension
-        }]} {
-            # A mime type for this file extension does not exist
-            # in the database.  Check to see AOLServer can 
-            # generate a mime type.
-
-            set mime_type [ns_guesstype $file_name]
-            
-            # Note: If AOLServer can't determine a mime type, 
-            # ns_guesstype will return */*. We still record
-            # a mime type for this file extension.  At a later
-            # date, the mime type for the file extension may be
-            # updated and, as a result, the files with that
-            # file extension will be associated with the
-            # proper mime types.
-
-            db_dml new_mime_type {
-                insert into cr_mime_types
-                (mime_type, file_extension)
-                values
-                (:mime_type, :file_extension)
-            }
-        }
-        return $mime_type
-    }
 }
 
 
