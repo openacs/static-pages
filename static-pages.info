@@ -14,7 +14,7 @@
     </database-support>
         <owner url="mailto:dave@thedesignexperience.org">Dave Bauer</owner>
         <owner url="http://www.piskorski.com">Andrew Piskorski</owner>
-        <summary>Static Pages makes it possible to search and comment on static pages.</summary>
+        <summary>Support searchable and commentable static site content.</summary>
         <release-date>2002-12-11</release-date>
         <vendor url="http://openacs.org/">OpenACS</vendor>
         <description format="text/plain">Static Pages loads the static pages of a site into the database so that their contents are available to other packages, such as site-wide-search.  It also allows users to make comments on static pages.</description>
