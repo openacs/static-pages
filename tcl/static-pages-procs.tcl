@@ -7,7 +7,6 @@ ad_library {
     @cvs-id $Id$
 }
 
-
 ad_proc -public sp_sync_cr_with_filesystem { 
     {
 	-file_add_proc ""
@@ -19,7 +18,7 @@ ad_proc -public sp_sync_cr_with_filesystem {
     fs_root
     root_folder_id
     {
-	static_page_regexp {\.html?$}
+ 	static_page_regexp {}	
     }
 } {
     Synchronize the content repository with the file system.
@@ -59,6 +58,8 @@ ad_proc -public sp_sync_cr_with_filesystem {
 
     set fs_trimmed [string trimright $fs_root "/"]
     set fs_trimmed_length [string length $fs_trimmed]
+
+    set static_page_regexp "\.[join [split [string trim [ad_parameter -package_id [nsv_get static_pages package_id] AllowedExtensions]] " "] "$|\."]$"
 
     foreach file [ad_find_all_files $fs_root] {
 	if { [regexp -nocase $static_page_regexp $file match] } {
@@ -393,50 +394,82 @@ ad_proc -public sp_serve_html_page { } {
 } {
     set filename [ad_conn file]
     set sp_filename [sp_get_relative_file_path $filename]
-    
+     
     set page_id [util_memoize [list sp_get_page_id $sp_filename]]
+
+    set package_id [nsv_get static_pages package_id]
+
+    set file [ad_conn file]
+    ad_conn -set subsite_id [site_node_closest_ancestor_package "acs-subsite"]
 
     # If the page is in the db, serve it carefully; otherwise just dump it out.
     if { $page_id >= 0 } {
-	set page_info [util_memoize [list sp_get_page_info_query $page_id]]
+        set page_info [util_memoize [list sp_get_page_info_query $page_id]]
 
-	# We only show the link here if the_public has 
-	# general_comments_create privilege on the page.  Why the_public
-	# rather than the current user?  Because we don't want admins to
-	# be seeing "Add a comment" links on non-commentable pages.
-	#
-	set comment_link ""
-	if { [ad_permission_p -user_id [acs_magic_object the_public] $page_id general_comments_create] } {
+        # We only show the link here if the_public has 
+        # general_comments_create privilege on the page.  Why the_public
+        # rather than the current user?  Because we don't want admins to
+        # be seeing "Add a comment" links on non-commentable pages.
+        #
+        set comment_link ""
+        if { [ad_permission_p -user_id [acs_magic_object the_public] $page_id general_comments_create] } {
 
-	    append comment_link "<center>[general_comments_create_link -object_name [lindex $page_info 0] $page_id [ad_conn url]]</center>"
-	}
-	append comment_link "[general_comments_get_comments -print_content_p [lindex $page_info 1] $page_id [ad_conn url]]"
+            append comment_link "<center>[general_comments_create_link -object_name [lindex $page_info 0] $page_id [ad_conn url]]</center>"
+        }
+        append comment_link "[general_comments_get_comments -print_content_p [lindex $page_info 1] $page_id [ad_conn url]]"
 
 
-	if { [catch {
-	    set fp [open $filename r]
-	    set file_contents [read $fp]
-	    close $fp
-	} errmsg] } {
-	    ad_return_error "Error reading file" \
-		    "This error was encountered while reading $filename: $errmsg"
-	}
+        if { [catch {
+            set fp [open $filename r]
+            set file_contents [read $fp]
+            close $fp
+        } errmsg] } {
+            ad_return_error "Error reading file" \
+                    "This error was encountered while reading $filename: $errmsg"
+        }
 
-	# Tcl needs a case-insensitive [string first] function.
-	#
-	set body_close [string first "</body" [string tolower $file_contents]]
-	if { $body_close >= 0 } {
-	    doc_return 200 text/html "[string range $file_contents 0 [expr $body_close-1]]${comment_link}[string range $file_contents $body_close end]"
-	} else {
-	    doc_return 200 text/html "${file_contents}$comment_link"
-	}
+        # Tcl needs a case-insensitive [string first] function.
+        #
+        set body_close [string first "</body" [string tolower $file_contents]]
+        if { $body_close >= 0 } {
+            set body "[string range $file_contents 0 [expr $body_close-1]]${comment_link}[string range $file_contents $body_close end]"
+        } else {
+            set body "${file_contents}$comment_link"
+        }
     } else {
-	ns_returnfile 200 text/html $filename
+        set body [template::util::read_file $file]
+    }
+
+    if { [ad_parameter -package_id $package_id TemplatingEnabledP] } {
+	# Strip out the <body>..</body> part as page will now be part of a master template
+	set headers ""
+	set sp_scripts ""
+	set title ""
+	if {[regexp -nocase {(.*?)<body.*?>(.*)</body.*?>} $body match headers bodyless]} {
+	    set body $bodyless
+	}   
+	# Get 0 or 1 <title>...</title> data to pass up to master template html headers
+	regexp -nocase {<title.*?>(.*?)</title.*?>} $headers match title
+	
+	# Get 0 or more <script>...</script> tags to pass up to master template html headers
+	while {[regexp -nocase {(<script.*?>.*?</script.*?>)(.*$)} $headers match ascript headers]} {
+	    append sp_scripts "\n$ascript"
+	} 
+	set file_mtime [clock format [file mtime $file]]    
+	set result [template::adp_parse [acs_root_dir]/[ad_parameter -package_id $package_id TemplatePath] [list body $body sp_scripts $sp_scripts title $title file_mtime $file_mtime]]
+	ns_return 200 text/html $result     
+    } else {
+	ns_return 200 text/html $body
     }
 }
 
+ad_proc -private sp_register_extension {} {
+    Register the handler for each static page file extension.
+} {
+    foreach extension [split [string tolower [string trim [ad_parameter -package_id [apm_package_id_from_key static-pages] AllowedExtensions]]] " "] {
+	rp_register_extension_handler $extension sp_serve_html_page
+	rp_register_extension_handler [string toupper $extension] sp_serve_html_page
+    }
+}
 # Register the handler for each static page file extension.
-rp_register_extension_handler html sp_serve_html_page
-rp_register_extension_handler htm sp_serve_html_page
-rp_register_extension_handler HTML sp_serve_html_page
-rp_register_extension_handler HTM sp_serve_html_page
+sp_register_extension
