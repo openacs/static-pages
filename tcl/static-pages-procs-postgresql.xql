@@ -119,7 +119,7 @@
 				from sp_folders
 				where folder_id = :root_folder_id)
    				) and
-			filename like '%${contained_string%'}
+			filename like '%${contained_string}%'
 		) loop
 
 		    PERFORM acs_permission__${grant_or_revoke}_permission(
