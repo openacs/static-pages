@@ -59,7 +59,7 @@ ad_proc -public sp_sync_cr_with_filesystem {
     set fs_trimmed [string trimright $fs_root "/"]
     set fs_trimmed_length [string length $fs_trimmed]
 
-    set static_page_regexp "\.[join [split [string trim [ad_parameter -package_id [nsv_get static_pages package_id] AllowedExtensions]] " "] "$|\."]$"
+    set static_page_regexp "\\.[join [split [string trim [ad_parameter -package_id [nsv_get static_pages package_id] AllowedExtensions]] " "] "$|\\."]$"
 
     foreach file [ad_find_all_files $fs_root] {
 	if { [regexp -nocase $static_page_regexp $file match] } {
