@@ -705,7 +705,7 @@ create	function static_page__grant_permission (
 		v_file_row	static_pages%ROWTYPE;
 		v_folder_row	sp_folders%ROWTYPE;
         begin
-                if recursive_p = ''t'' then
+                if p_recursive_p = ''t'' then
                         -- For each folder that is a descendant of item_id, grant.
                         for v_folder_row in 
                                 select folder_id from sp_folders
