@@ -816,7 +816,7 @@ ad_proc -public sp_serve_html_page { } {
 	    append sp_scripts "\n$ascript"
 	} 
 	set file_mtime [clock format [file mtime $file]]    
-	set result [template::adp_parse [acs_root_dir]/[ad_parameter -package_id $package_id TemplatePath] [list body $body sp_scripts $sp_scripts title $title file_mtime $file_mtime]]
+	set result [template::adp_parse [acs_root_dir]/[ad_parameter -package_id $package_id TemplatePath] [list body $body sp_scripts $sp_scripts title "$title" file_mtime $file_mtime]]
 	ns_return 200 text/html $result     
     } else {
 	ns_return 200 text/html $body
