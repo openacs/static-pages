@@ -35,7 +35,7 @@
 
 		    begin
 			:1 := static_page.new(
-				  filename => :file,
+				  filename => :sp_filename,
 				  title => :page_title,
 				  folder_id => :parent_folder_id
 			      );
