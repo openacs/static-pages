@@ -7,7 +7,7 @@
     <initial-install-p>f</initial-install-p>
     <singleton-p>f</singleton-p>
 
-    <version name="5.2.0d2" url="http://openacs.org/repository/download/apm/static-pages-5.2.0d2.apm">
+    <version name="5.2.0d3" url="http://openacs.org/repository/download/apm/static-pages-5.2.0d3.apm">
     <database-support>
         <database>oracle</database>
         <database>postgresql</database>
@@ -17,7 +17,8 @@
         <summary>Support searchable and commentable static site content.</summary>
         <release-date>2002-12-11</release-date>
         <vendor url="http://openacs.org">OpenACS</vendor>
-        <description format="text/plain">Static Pages loads the static pages of a site into the database so that their contents are available to other packages, such as site-wide-search.  It also allows users to make comments on static pages.</description>
+
+        <description format="text/plain">Static Pages loads the static content of a site from the filesystem into the database so that their contents are available to other packages, such as search and general-comments, and allows static content to be wrapped by the master template to provide persistent navigation.</description>
 
         <provides url="static-pages" version="5.2.0d2"/>
         <requires url="acs-content-repository" version="5.1.0d2"/>
@@ -25,59 +26,10 @@
         <requires url="acs-tcl" version="5.1.0d1"/>
         <requires url="general-comments" version="4.1"/>
 
-        <files>
-            <file type="data_model_create" db_type="oracle" path="sql/oracle/static-pages-create.sql"/>
-            <file type="data_model_drop" db_type="oracle" path="sql/oracle/static-pages-drop.sql"/>
-            <file type="data_model" db_type="oracle" path="sql/oracle/static-pages-sws-drop.sql"/>
-            <file type="data_model" db_type="oracle" path="sql/oracle/static-pages-sws.sql"/>
-            <file type="data_model_create" db_type="postgresql" path="sql/postgresql/static-pages-create.sql"/>
-            <file type="data_model_drop" db_type="postgresql" path="sql/postgresql/static-pages-drop.sql"/>
-            <file type="data_model" db_type="postgresql" path="sql/postgresql/static-pages-sc-create.sql"/>
-            <file type="data_model" db_type="postgresql" path="sql/postgresql/static-pages-sc-drop.sql"/>
-            <file type="package_spec" path="static-pages.info"/>
-            <file type="tcl_init" path="tcl/static-pages-init.tcl"/>
-            <file type="query_file" db_type="oracle" path="tcl/static-pages-procs-oracle.xql"/>
-            <file type="query_file" db_type="postgresql" path="tcl/static-pages-procs-postgresql.xql"/>
-            <file type="tcl_procs" path="tcl/static-pages-procs.tcl"/>
-            <file type="query_file" path="tcl/static-pages-procs.xql"/>
-            <file type="tcl_procs" path="tcl/static-pages-sc-procs.tcl"/>
-            <file type="query_file" path="tcl/static-pages-sc-procs.xql"/>
-            <file type="content_page" path="www/admin/commentability-contain.tcl"/>
-            <file type="query_file" db_type="oracle" path="www/admin/commentability-oracle.xql"/>
-            <file type="query_file" db_type="postgresql" path="www/admin/commentability-postgresql.xql"/>
-            <file type="query_file" db_type="oracle" path="www/admin/commentability-toggle-oracle.xql"/>
-            <file type="query_file" db_type="postgresql" path="www/admin/commentability-toggle-postgresql.xql"/>
-            <file type="content_page" path="www/admin/commentability-toggle.tcl"/>
-            <file type="content_page" path="www/admin/commentability.adp"/>
-            <file type="content_page" path="www/admin/commentability.tcl"/>
-            <file type="query_file" path="www/admin/display-policy-toggle-oracle.xql"/>
-            <file type="query_file" db_type="postgresql" path="www/admin/display-policy-toggle-postgresql.xql"/>
-            <file type="content_page" path="www/admin/display-policy-toggle.tcl"/>
-            <file type="content_page" path="www/admin/fs-scan-progress.tcl"/>
-            <file type="content_page" path="www/admin/fs-scan.adp"/>
-            <file type="content_page" path="www/admin/fs-scan.tcl"/>
-            <file type="query_file" db_type="oracle" path="www/admin/index-oracle.xql"/>
-            <file type="query_file" db_type="postgresql" path="www/admin/index-postgresql.xql"/>
-            <file type="content_page" path="www/admin/index.adp"/>
-            <file type="content_page" path="www/admin/index.tcl"/>
-            <file type="query_file" path="www/admin/index.xql"/>
-            <file type="documentation" path="www/doc/acs-admin-guide.html"/>
-            <file type="documentation" path="www/doc/ad-doc.css"/>
-            <file type="documentation" path="www/doc/dev-guide.html"/>
-            <file type="documentation" path="www/doc/index.html"/>
-            <file type="documentation" path="www/doc/static-pages-requirements.html"/>
-            <file type="documentation" path="www/doc/xml/design.xml"/>
-            <file type="documentation" path="www/doc/xml/index.xml"/>
-            <file type="documentation" path="www/doc/xml/installation.xml"/>
-            <file type="documentation" path="www/doc/xml/requirements.xml"/>
-            <file type="content_page" path="www/index.tcl"/>
-            <file type="content_page" path="www/page-visit.tcl"/>
-            <file type="query_file" path="www/page-visit.xql"/>
-            <file type="content_page" path="www/templates/static.adp"/>
-        </files>
         <parameters>
             <parameter datatype="string"  min_n_values="1"  max_n_values="1"  name="AllowedExtensions"  default="html htm" description="Enter the file extensions you want to have working with &quot;static-pages&quot;. Separate them with a single whitespace. (Case insensitive)."/>
             <parameter datatype="number"  min_n_values="1"  max_n_values="1"  name="TemplatingEnabledP"  default="0" description="Set this to 1 if you want the pages that are scanned by static-pages to be templated. Otherwise set it to 0."/>
+            <parameter datatype="number"  min_n_values="1"  max_n_values="1"  name="CommentsDisplayedP"  default="1" description="Set this to 1 if you want to display a comment link and comments inline."/>
             <parameter datatype="string"  min_n_values="1"  max_n_values="1"  name="TemplatePath"  default="/packages/static-pages/www/templates/static" description="If you want to activate templating of static pages, you must tell the system where to find the adp template. Leave out the initial / and don't forget the filename. (the path is relative to [acs_root_dir] and .adp is implied).]"/>
             <parameter datatype="string"  min_n_values="1"  max_n_values="1"  name="fs_root"  default="/www" description="Root folder of Static Pages tree, relative to acs_root_dir server root."/>
         </parameters>

@@ -750,14 +750,20 @@ ad_proc -public sp_serve_html_page { } {
     # TemplatingEnabledP, need to know the package_id of the
     # static-pages instance where this page is located, which is
     # likely NOT the package_id returned by [ad_conn package_id]:
-
     foreach [list page_id package_id] \
         [util_memoize [list sp_get_page_id $sp_filename]] { break }
+
+    set templating_enabled_p [parameter::get -package_id $package_id -parameter TemplatingEnabledP -default 0]
+    set comment_p [parameter::get -package_id $package_id -parameter CommentsDisplayedP -default 1]
 
     set file [ad_conn file]
     ad_conn -set subsite_id [site_node_closest_ancestor_package "acs-subsite"]
 
     # If the page is in the db, serve it carefully; otherwise just dump it out.
+    # We are careful to use ns_returnfile if possible since it is much more 
+    # efficient than reading the whole file into a tcl string and doing ns_return, 
+    # plus it will give 304's if the file is unchanged.
+
     if { $page_id >= 0 } {
         set page_info [util_memoize [list sp_get_page_info_query $page_id]]
 
@@ -769,58 +775,73 @@ ad_proc -public sp_serve_html_page { } {
         # general_comments_create privilege on the page.  Why the_public
         # rather than the current user?  Because we don't want admins to
         # be seeing "Add a comment" links on non-commentable pages.
-        #
+
         set comment_link ""
-        if { [ad_permission_p -user_id [acs_magic_object the_public] $page_id general_comments_create] } {
-
-            append comment_link "<center>[general_comments_create_link -object_name [lindex $page_info 0] $page_id [ad_conn url]]</center>"
-        }
-        append comment_link "[general_comments_get_comments -print_content_p [lindex $page_info 1] $page_id [ad_conn url]]"
-
-
-        if { [catch {
-            set fp [open $filename r]
-            set file_contents [read $fp]
-            close $fp
-        } errmsg] } {
-            ad_return_error "Error reading file" \
-                    "This error was encountered while reading $filename: $errmsg"
+        if { $comment_p } {
+            if { [ad_permission_p -user_id [acs_magic_object the_public] $page_id general_comments_create] } {
+                append comment_link "<center>[general_comments_create_link -object_name [lindex $page_info 0] $page_id [ad_conn url]]</center>"
+            }
+            append comment_link "[general_comments_get_comments -print_content_p [lindex $page_info 1] $page_id [ad_conn url]]"
         }
 
-        # Tcl needs a case-insensitive [string first] function.
-        #
-        set body_close [string first "</body" [string tolower $file_contents]]
-        if { $body_close >= 0 } {
-            set body "[string range $file_contents 0 [expr $body_close-1]]${comment_link}[string range $file_contents $body_close end]"
+        # Here if comment_link is empty and we are not templating, just ns_returnfile.
+        if {[empty_string_p $comment_link]
+            && ! $templating_enabled_p } {
+            ns_returnfile 200 text/html $filename
+            return
         } else {
-            set body "${file_contents}$comment_link"
+            if { [catch {
+                set fp [open $filename r]
+                set file_contents [read $fp]
+                close $fp
+            } errmsg] } {
+                ad_return_error "Error reading file" \
+                    "This error was encountered while reading $filename: $errmsg"
+            } 
+
+
+            # Tcl needs a case-insensitive [string first] function.
+            #
+            set body_close [string first "</body" [string tolower $file_contents]]
+            if { $body_close >= 0 } {
+                set body "[string range $file_contents 0 [expr $body_close-1]]${comment_link}[string range $file_contents $body_close end]"
+            } else {
+                set body "${file_contents}$comment_link"
+            }
         }
     } else {
-        set body [template::util::read_file $file]
+        if { ! $templating_enabled_p } {
+            # doing ns_returnfile here means we will get 304's when we can
+            ns_returnfile 200 text/plain $file
+            return {}
+        } else {
+            set body [template::util::read_file $file]
+        }
     }
 
-    set templating_enabled [ad_parameter -package_id $package_id TemplatingEnabledP]
-    if { ![empty_string_p $templating_enabled] && $templating_enabled } {
+    # If we did not return a file directly above we need to return the body, possibly after 
+    # wrapping it in the master template.
+    if { $templating_enabled_p } {
 	# Strip out the <body>..</body> part as page will now be part of a master template
 	set headers ""
 	set sp_scripts ""
 	set title ""
 	if {[regexp -nocase {(.*?)<body.*?>(.*)</body.*?>} $body match headers bodyless]} {
 	    set body $bodyless
-	}   
+	}
 	# Get 0 or 1 <title>...</title> data to pass up to master template html headers
 	regexp -nocase {<title.*?>(.*?)</title.*?>} $headers match title
-	
+
 	# Get 0 or more <script>...</script> tags to pass up to master template html headers
 	while {[regexp -nocase {(<script.*?>.*?</script.*?>)(.*$)} $headers match ascript headers]} {
 	    append sp_scripts "\n$ascript"
-	} 
-	set file_mtime [clock format [file mtime $file]]    
-	set result [template::adp_parse [acs_root_dir]/[ad_parameter -package_id $package_id TemplatePath] [list body $body sp_scripts $sp_scripts title $title file_mtime $file_mtime]]
-	ns_return 200 text/html $result     
-    } else {
-	ns_return 200 text/html $body
+	}
+
+	set file_mtime [clock format [file mtime $file]]
+
+	set body [template::adp_parse [acs_root_dir]/[ad_parameter -package_id $package_id TemplatePath] [list body $body sp_scripts $sp_scripts title $title file_mtime $file_mtime page_id $page_id] ]
     }
+    ns_return 200 text/html $body
 }
 
 
