@@ -33,5 +33,18 @@ ad_proc static_page__url {
 } {
 
     db_1row sp_url ""
-    return "${url}"
+    if {[string match /www/* $url]} { 
+        # strip the /www off since its in pageroot
+        return [ad_url][string range $url 4 end]
+    } else {
+        # find a package to match the url
+        if {[regexp {/packages/([^/]*)/www/(.*)} $url match key stub]} { 
+            set base [lindex [site_node::get_children -element url -package_key $key -node_id [site_node::get_element -url / -element node_id]] 0]
+            if {![empty_string_p $base]} {
+                return "[ad_url]$base$stub"
+            }
+        }
+    }
+
+    return $url
 }
