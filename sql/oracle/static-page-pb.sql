@@ -76,7 +76,7 @@ create or replace package body static_page as
 		return v_item_id;
 	end;
 
-	procedure delete (
+	procedure del (
 		static_page_id	in static_pages.static_page_id%TYPE
 	) is
 	begin
@@ -97,14 +97,14 @@ create or replace package body static_page as
 				where parent_id = comment_row.comment_id
 			);
 
-			acs_message.delete(comment_row.comment_id);
+			acs_message.del(comment_row.comment_id);
 		end loop;
 
 		-- Delete the page.
 		-- WE SHOULDN'T NEED TO DO THIS: CONTENT_ITEM.DELETE SHOULD TAKE CARE OF
 		-- DELETING FROM STATIC PAGES.
-		delete from static_pages where static_page_id = static_page.delete.static_page_id;
-		content_item.delete(static_page_id);
+		delete from static_pages where static_page_id = static_page.del.static_page_id;
+		content_item.del(static_page_id);
 	end;
 
 	function get_root_folder (
@@ -252,11 +252,11 @@ create or replace package body static_page as
 				select static_page_id from static_pages
 				where folder_id = folder_row.folder_id
 			) loop
-				static_page.delete(page_row.static_page_id);
+				static_page.del(page_row.static_page_id);
 			end loop;
 
 			delete from sp_folders where folder_id = folder_row.folder_id;
-			content_folder.delete(folder_row.folder_id);
+			content_folder.del(folder_row.folder_id);
 		end loop;
 	end;
 
@@ -283,7 +283,7 @@ create or replace package body static_page as
 				where session_id = static_page.delete_stale_items.session_id
 			)
 		) loop
-			static_page.delete(stale_file_row.static_page_id);
+			static_page.del(stale_file_row.static_page_id);
 		end loop;
 
 		-- Now delete all folders that aren't in sp_extant_folders.  There are two
@@ -314,7 +314,7 @@ create or replace package body static_page as
 			delete from sp_folders
 			where folder_id = stale_folder_row.folder_id;
 
-			content_folder.delete(stale_folder_row.folder_id);
+			content_folder.del(stale_folder_row.folder_id);
 		end loop;
 	end delete_stale_items;
 

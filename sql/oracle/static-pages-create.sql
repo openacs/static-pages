@@ -176,7 +176,7 @@ begin
 	);
 end;
 /
-show errros
+show errors
 
 
 @static-page-ph.sql

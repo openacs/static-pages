@@ -31,7 +31,7 @@ create or replace package static_page as
 		,mime_type      in cr_revisions.mime_type%TYPE  default 'text/html'
 	) return static_pages.static_page_id%TYPE;
 
-	procedure delete (
+	procedure del (
 	-- /**
 	--  *  Delete a static page, including the associated content_item.
 	--  *
