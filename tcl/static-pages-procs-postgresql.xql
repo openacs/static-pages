@@ -16,7 +16,7 @@
 <fullquery name="sp_sync_cr_with_filesystem.get_folder_id">
       <querytext>
 
-        select coalesce(content_item__get_id(:cumulative_path,:root_folder_id,'f'),0)
+        select coalesce((select item_id from cr_items where name=:cumulative_path),0)
 
       </querytext>
 </fullquery>

@@ -101,7 +101,7 @@
 <fullquery name="sp_sync_cr_with_filesystem.get_folder_id">
       <querytext>
 
-        select nvl(content_item.get_id(:cumulative_path,:root_folder_id),0)
+        select nvl((select item_id from cr_items where name=:cumulative_path),0)
         from dual
 
       </querytext>
