@@ -151,7 +151,7 @@ end;
 
 <fullquery name="sp_get_page_info_query.get_page_info">
 	<querytext>
-select '{'||content_item__get_title(:page_id)||'} '||CASE WHEN show_comments_p='t' then '1' else '0' END from static_pages where static_page_id = :page_id
+select '{' || content_item__get_title(:page_id) || '} ' || CASE WHEN show_comments_p=TRUE then '1' else '0' END from static_pages where static_page_id = :page_id
 	</querytext>
 </fullquery>
 
