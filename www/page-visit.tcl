@@ -16,10 +16,13 @@ if { ![db_0or1row sp_path { select filename from static_pages where static_page_
 
 # The filename must begin "[acs_root_dir]/www" to be valid.  These leading
 # characters will then be stripped off to produce the URL.
+# DaveB: not anymore! We chop off that part and just stuff the relative
+# path in the database to allow leaving the static-pages in the filesystem
 #
-if { [string first "[acs_root_dir]/www" $filename] != 0 } {
-    ad_return_error "Error in filename" "This page has an invalid filename."
-}
+#if { [string first "[acs_root_dir]/www" $filename] != 0 } {
+#    ad_return_error "Error in filename" "This page has an invalid filename."
+#}
+
 
 ad_returnredirect [string range $filename [string length "[acs_root_dir]/www"] end]
 
