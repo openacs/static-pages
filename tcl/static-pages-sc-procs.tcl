@@ -10,7 +10,7 @@
 ad_proc static_page__datasource {
     object_id
 } {
-    @author Dave Bauer
+    @author Dave Bauer (dave@thedesignexperience.org)
 } {
 
     set path_stub [cr_fs_path STATIC_PAGES]
@@ -23,7 +23,7 @@ ad_proc static_page__datasource {
 ad_proc static_page__url {
     object_id
 } {
-    @author Dave Bauer
+    @author Dave Bauer (dave@thedesignexperience.org)
 } {
 
     db_1row sp_url ""
