@@ -1,3 +1,5 @@
+ns_log Notice "Loading packages/tcl/static-pages-init.tcl"
+
 # setup the STATIC_PAGES location for CR_LOCATIONS so that all paths
 # stored in the db are relative to the OpenACS installation dir
 
@@ -37,4 +39,4 @@ sp_register_extension
 #ad_schedule_proc -thread t -schedule_proc ns_schedule_daily [list 04 00] sp_sync_cr_with_filesystem_scheduled
 
 
-ns_log notice "static-pages-init.tcl loaded"
+

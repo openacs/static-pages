@@ -25,7 +25,7 @@ ad_proc -public sp_sync_cr_with_filesystem_scheduled {{}} {
     @creation-date 2002/09/12
 } {
     set proc_name {sp_sync_cr_with_filesystem_scheduled}
-    ns_log Notice "$proc_name: Starting."
+    ns_log Notice "$proc_name: Starting"
 
     # sp_sync_cr_with_filesystem callbacks to fill file_items with info:
 
@@ -53,7 +53,7 @@ ad_proc -public sp_sync_cr_with_filesystem_scheduled {{}} {
         set root_folder_id [sp_root_folder_id $package_id]
         set fs_root "[acs_root_dir][ad_parameter -package_id $package_id {fs_root}]"
 
-        ns_log Notice "$proc_name: About to scan the filesystem for:  package_id '$package_id', instance_name '$instance_name', fs_root '$fs_root':"
+        ns_log Debug "$proc_name: About to scan the filesystem for:  package_id '$package_id', instance_name '$instance_name', fs_root '$fs_root':"
 
         # If our call to sp_sync_cr_with_filesystem fails for some
         # reason, want to continue on trying the other package
@@ -72,14 +72,14 @@ ad_proc -public sp_sync_cr_with_filesystem_scheduled {{}} {
             global errorInfo
             ns_log Error "$proc_name: For package_id: '$package_id', $sync_proc failed with error:\n${errorInfo}"
         } else {
-            ns_log Notice "$proc_name: For package_id: '$package_id': $result"
+            ns_log Debug "$proc_name: For package_id: '$package_id': $result"
         }
 
     } if_no_rows {
         ns_log Warning "$proc_name: NO package ids found for package key: '$package_key'."
     }
 
-    ns_log Notice "$proc_name: Done."
+    ns_log Debug "$proc_name: Done."
 }
 
 
@@ -643,12 +643,12 @@ ad_proc -private  sp_get_full_file_path { file } {
 
 ad_proc -private sp_get_relative_file_path { file } {
     Takes a full file path and returns the path relative to the
-    static-page storage directory, usualyl /web/openacs/www/
+    static-page storage directory, usually /web/openacs/www/
 } {
     set relative_path [string range $file [string length [cr_fs_path STATIC_PAGES]] end]
 
-    ns_log notice "**[cr_fs_path STATIC_PAGES]**"
-    ns_log notice "relative path:$relative_path"
+    ns_log debug "**[cr_fs_path STATIC_PAGES]**"
+    ns_log debug "relative path:$relative_path"
     return $relative_path
 }
 
@@ -858,7 +858,7 @@ ad_proc -private sp_register_extension {} {
             rp_register_extension_handler $extension $handler_proc
             rp_register_extension_handler [string toupper $extension] $handler_proc
         } else {
-            ns_log Notice "$proc_name:  NOT registering any proc to handle files with extension '$extension'."
+            ns_log Warning "$proc_name: NOT registering any proc to handle files with extension '$extension'."
 
             # TODO: Add a PDF or other extension handler?  Necessary
             # only if you want to be able to make comments on non-HTML
