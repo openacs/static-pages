@@ -12,6 +12,7 @@ ad_page_contract {
 
 if { ![db_0or1row sp_path { select filename from static_pages where static_page_id = :page_id }] } {
     ad_return_error "Page not found" "The page requested could not be found."
+    ad_script_abort
 }
 
 # The filename must begin "[acs_root_dir]/www" to be valid.  These leading
