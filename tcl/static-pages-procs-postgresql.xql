@@ -36,11 +36,10 @@
  
 <fullquery name="sp_sync_cr_with_filesystem.update_db_file">      
       <querytext>
-      FIX ME LOB 
-			update cr_revisions set content = empty_blob()
-			where revision_id = content_item.get_live_revision(:static_page_id)
-			returning content into :1
-		    
+
+		update cr_revisions set content = :file
+		where revision_id = content_item__get_live_revisions(:static_page_id)
+   
       </querytext>
 </fullquery>
 
@@ -59,10 +58,10 @@
 
 <fullquery name="sp_sync_cr_with_filesystem.insert_file_contents">
       <querytext>
-      FIX ME LOB
-		    update cr_revisions set content = empty_blob()
-		    where revision_id = content_item.get_live_revision(:static_page_id)
-		    returning content into :1
+
+		update cr_revisions set content = :file
+		where revision_id = content_item__get_live_revisions(:static_page_id)
+
 
       </querytext>
 </fullquery>
@@ -116,6 +115,18 @@ end;' language 'plpgsql';
 select inline__0();
 
 drop function inline__0();
+      </querytext>
+</fullquery>
+
+<fullquery name="sp_get_page_info_query.get_page_info">
+	<querytext>
+select '{'||content_item__get_title(:page_id)||'} '||CASE WHEN show_comments_p='t' then '1' else '0' END from static_pages where static_page_id = :page_id
+	</querytext>
+</fullquery>
+
+<fullquery name="sp_flush_page.get_page_info">
+      <querytext>
+select '{'||content_item__get_title(:page_id)||'} '||CASE WHEN show_comments_p='t' then '1' else '0' END from static_pages where static_page_id = :page_id
       </querytext>
 </fullquery>
 

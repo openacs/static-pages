@@ -311,7 +311,19 @@ ad_proc -private sp_get_page_info_query { page_id } {
     @author Brandoch Calef (bcalef@arsdigita.com)
     @creation-date 2001-02-23
 } {
-    return "select '{'||content_item.get_title($page_id)||'} '||decode(show_comments_p,'t',1,0) from static_pages where static_page_id = $page_id"
+    return [db_list get_page_info "select '{'||content_item.get_title($page_id)||'} '||decode(show_comments_p,'t',1,0) from static_pages where static_page_id = $page_id"]
+}
+
+
+ad_proc -private sp_get_page_id { filename } {
+    Gets page_id
+    @author Dave Bauer (dave@thedesignexperience.org)
+    @creation-date 2001-07-30
+} {
+    return [list [db_string search_page "
+    select static_page_id from static_pages sp, sp_folders spf 
+               where filename='$filename' and sp.folder_id=spf.folder_id
+               and package_id=[apm_package_id_from_key "static-pages"]" -default -1]]
 }
 
 ad_proc -public sp_flush_page { page_id } {
@@ -321,7 +333,7 @@ ad_proc -public sp_flush_page { page_id } {
     @author Brandoch Calef (bcalef@arsdigita.com)
     @creation-date 2001-02-23
 } {
-    util_memoize_flush [list db_string get_page_info [sp_get_page_info_query $page_id]]
+    util_memoize_flush [list [sp_get_page_info_query $page_id]]
 }
 
 ad_proc -public sp_serve_html_page { } {
@@ -331,14 +343,14 @@ ad_proc -public sp_serve_html_page { } {
     @creation-date 2001-01-23
 } {
     set filename [ad_conn file]
-    set query "select static_page_id from static_pages sp, sp_folders spf 
-               where filename='$filename' and sp.folder_id=spf.folder_id
-               and package_id=[apm_package_id_from_key "static-pages"]"
-    set page_id [util_memoize [list db_string search_page $query -default -1]]
+
+    set page_id [util_memoize [list sp_get_page_id $filename]]
 
     # If the page is in the db, serve it carefully; otherwise just dump it out.
     if { $page_id >= 0 } {
-	set page_info [util_memoize [list db_string get_page_info [sp_get_page_info_query $page_id]]]
+	set page_info [util_memoize [list sp_get_page_info_query $page_id]]
+
+
 
 	# We only show the link here if the_public has 
 	# general_comments_create privilege on the page.  Why the_public
@@ -347,9 +359,8 @@ ad_proc -public sp_serve_html_page { } {
 	#
 	set comment_link ""
 	if { [ad_permission_p -user_id [acs_magic_object the_public] $page_id general_comments_create] } {
-	    append comment_link "<center>
-	    [general_comments_create_link -object_name [lindex $page_info 0] $page_id [ad_conn url]]
-	    </center>"
+
+	    append comment_link "<center>[general_comments_create_link -object_name [lindex $page_info 0] $page_id [ad_conn url]]</center>"
 	}
 	append comment_link "[general_comments_get_comments -print_content_p [lindex $page_info 1] $page_id [ad_conn url]]"
 
