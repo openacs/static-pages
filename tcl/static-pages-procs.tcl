@@ -266,7 +266,6 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
     }
 
     ns_mutex unlock $mutex
-    ns_log Notice "atp: $proc_name: other_start_time: '$other_start_time'"
 
     if { ! $run_p } {
         # Another copy is running, must abort:
@@ -700,13 +699,14 @@ ad_proc sp_maybe_create_new_mime_type {
     @author Andrew Piskorski (atp@piskorski.com)
     @creation-date 2002-12-15
 } {
+    set proc_name {sp_maybe_create_new_mime_type}
     set func {fs_maybe_create_new_mime_type}
 
     if { [nsv_exists api_proc_doc $func] ||
          ![empty_string_p [namespace eval :: [list info procs $func]]]
      } {
         # The file-storage version of this proc exists, use it:
-        return [list $func $file_name]
+        return [eval [list $func $file_name]]
 
     } else {
         # Fall back to local implementation:
