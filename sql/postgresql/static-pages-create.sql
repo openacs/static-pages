@@ -54,6 +54,13 @@ create index sp_folders_package_id_idx on sp_folders(package_id);
 --tree_sortkey index DaveB
 create index sp_folders_tree_skey_idx on sp_folders (tree_sortkey);
 
+create function sp_folders_get_tree_sortkey(integer) returns varbit as '
+declare
+  p_folder_id    alias for $1;
+begin
+  return tree_sortkey from sp_folders where folder_id = p_folder_id;
+end;' language 'plpgsql';
+
 -- tree_sortkey triggers DaveB
 
 create function sp_folders_insert_tr () returns opaque as '
