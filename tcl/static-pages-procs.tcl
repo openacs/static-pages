@@ -357,7 +357,7 @@ ad_proc -public sp_flush_page { page_id } {
     @author Brandoch Calef (bcalef@arsdigita.com)
     @creation-date 2001-02-23
 } {
-    util_memoize_flush [list [sp_get_page_info_query $page_id]]
+    util_memoize_flush [list sp_get_page_info_query $page_id]
 }
 
 ad_proc -public sp_serve_html_page { } {
