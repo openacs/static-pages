@@ -172,12 +172,10 @@ ad_proc -private sp_sync_cr_with_filesystem_unlock {package_id} {
    @author Andrew Piskorski (atp@piskorski.com)
    @creation-date 2001/08/27
 } {
-   ns_share sp_sync_cr_with_filesystem_times
-   ns_share sp_sync_cr_with_filesystem_mutex
-
-   ns_mutex lock $sp_sync_cr_with_filesystem_mutex
-   set sp_sync_cr_with_filesystem_times($package_id) {}
-   ns_mutex unlock $sp_sync_cr_with_filesystem_mutex
+    set mutex [nsv_get . {sp_sync_cr_fs_mutex}]
+    ns_mutex lock $mutex
+    nsv_set {sp_sync_cr_fs_times} $package_id {}
+    ns_mutex unlock $mutex
 }
 
 
@@ -240,47 +238,59 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
     # Make sure that only 1 copy of this proc per package instance
     # ever runs at once:
 
-    ns_share sp_sync_cr_with_filesystem_times
-    ns_share sp_sync_cr_with_filesystem_mutex
+    set mutex [nsv_get . {sp_sync_cr_fs_mutex}]
+    set nsv {sp_sync_cr_fs_times}
 
-    # TODO: Currently, the 2nd instance of this proc will block until
-    # the first finishes, rather than immediately returning the
-    # return_mesg below and quitting.  Fix this.  --atp@piskorski.com,
-    # 2002/12/11 20:06 EST
+    # These multiple nsv operations need to all be atomic, so use a
+    # mutex:
 
-    ns_mutex lock $sp_sync_cr_with_filesystem_mutex
-    if { -1 == [lsearch [array names sp_sync_cr_with_filesystem_times] $package_id] } {
-       # The package_id isn't in the array yet at all, so another copy
-       # is not running.
-       set sp_sync_cr_with_filesystem_times($package_id) [ns_time]
-    } elseif { [empty_string_p $sp_sync_cr_with_filesystem_times($package_id)] } {
-       # We're ok, no other copy is running.
-       set sp_sync_cr_with_filesystem_times($package_id) [ns_time]
+    ns_mutex lock $mutex
+
+    if { ![nsv_array exists $nsv] } {
+        ns_mutex unlock $mutex
+        error "nsv array '$nsv' does not exist!"
+    } elseif { ![nsv_exists $nsv $package_id] } {
+        # The package_id isn't in the array yet at all, so another copy
+        # is not running.
+        set other_start_time {}
     } else {
-       # Another copy is running.
-       set other_start_time $sp_sync_cr_with_filesystem_times($package_id)
-       ns_mutex unlock $sp_sync_cr_with_filesystem_mutex
+        set other_start_time [nsv_get sp_sync_cr_fs_times $package_id]
+    }
 
-       set other_time_pretty [ns_httptime $other_start_time]
-       set time_diff [expr [ns_time] -  $other_start_time]
+    if { [empty_string_p $other_start_time] } {
+        # We're ok, no other copy is running.
+        nsv_set $nsv $package_id [ns_time]
+        set run_p 1
+    } else {
+        set run_p 0
+    }
 
-       set mesg "sp_sync_cr_with_filesystem: Already running. sp_sync_cr_with_filesystem_times($package_id) == $other_time_pretty, $time_diff seconds ago."
-       ns_log Warning $mesg
+    ns_mutex unlock $mutex
+    ns_log Notice "atp: $proc_name: other_start_time: '$other_start_time'"
 
-       set return_mesg "Another copy of this procedure is already running for
+    if { ! $run_p } {
+        # Another copy is running, must abort:
+        set time_diff [expr [ns_time] -  $other_start_time]
+
+        set other_time_pretty [ns_httptime $other_start_time]
+        # Could also use: [clock format [clock seconds]]
+
+        set mesg "sp_sync_cr_with_filesystem: Already running. sp_sync_cr_fs_times($package_id) == $other_time_pretty, $time_diff seconds ago."
+        ns_log Warning $mesg
+
+        set return_mesg "Another copy of this procedure is already running for
        this package instance.  It started running $time_diff seconds
        ago, at $other_time_pretty.  Only one copy may run at a time.
        Please wait and then try again."
 
-       return 0
+        # Whether you actually see this happen depends whether the
+        # second thread running this proc gets scheduled or not before
+        # the first one completes.  If your machine is slow enough, or
+        # you have enough threads going at once, you will see it.
+        # --atp@piskorski.com, 2002/12/16 03:57 EST
 
-       # Instead of [ns_httptime [ns_time]], could also use [clock format [clock seconds]].
+        return 0
     }
-    ns_mutex unlock $sp_sync_cr_with_filesystem_mutex
-
-    # Up to here in this proc had better be error free - if not, our
-    # whole mutex and error catching scheme will probably crash and
-    # burn!  --atp@piskorski.com, 2001/08/27 18:37 EDT
 
 
     set sync_session_id [db_nextval sp_session_id_seq]

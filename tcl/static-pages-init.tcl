@@ -17,9 +17,16 @@ if { ![nsv_exists CR_LOCATIONS STATIC_PAGES] } {
 # means is curretnly running, and the string will give the time the
 # proc started running:
 
-ns_share -init { array set sp_sync_cr_with_filesystem_times {} } sp_sync_cr_with_filesystem_times
+set nsv {sp_sync_cr_fs_times}
+if { ![nsv_array exists $nsv] } {
+    nsv_array set $nsv [list]
+    #nsv_set $nsv foo bar ; nsv_unset $nsv foo
+}
 
-ns_share -init { set sp_sync_cr_with_filesystem_mutex [ns_mutex create] } sp_sync_cr_with_filesystem_mutex
+set key {sp_sync_cr_fs_mutex}
+if { ![nsv_exists . $key] } {
+    nsv_set . $key [ns_mutex create]
+}
 
 
 # Register the handler for each static page file extension.
