@@ -5,18 +5,18 @@
     <package-name>Static Pages</package-name>
     <pretty-plural>Static Pages</pretty-plural>
     <initial-install-p>f</initial-install-p>
-    <singleton-p>t</singleton-p>
+    <singleton-p>f</singleton-p>
 
-    <version name="4.2a" url="http://www.arsdigita.com/acs-repository/download/apm/static-pages-4.2a.apm">
+    <version name="4.3" url="http://openacs.org/">
     <database-support>
         <database>oracle</database>
         <database>postgresql</database>
     </database-support>
-        <owner url="mailto:bcalef@arsdigita.com">Brandoch Calef</owner>
-        <owner url="mailto:bcalef@arsdigita.com">Brandoch Calef</owner>
+        <owner url="mailto:dave@thedesignexperience.org">Dave Bauer</owner>
+        <owner url="http://www.piskorski.com">Andrew Piskorski</owner>
         <summary>Static Pages makes it possible to search and comment on static pages.</summary>
-        <release-date>2001-03-09</release-date>
-        <vendor url="http://www.arsdigita.com/">ArsDigita Corporation</vendor>
+        <release-date>2002-12-11</release-date>
+        <vendor url="http://openacs.org/">OpenACS</vendor>
         <description format="text/plain">Static Pages loads the static pages of a site into the database so that their contents are available to other packages, such as site-wide-search.  It also allows users to make comments on static pages.</description>
 
         <provides url="static-pages" version="4.2a"/>
@@ -72,13 +72,14 @@
             <file type="documentation" path="www/doc/xml/requirements.xml"/>
             <file type="content_page" path="www/index.tcl"/>
             <file type="content_page" path="www/page-visit.tcl"/>
-            <file type="content_page" path="www/templates/static.adp"/>
             <file type="query_file" path="www/page-visit.xql"/>
+            <file type="content_page" path="www/templates/static.adp"/>
         </files>
         <parameters>
             <parameter datatype="string"  min_n_values="1"  max_n_values="1"  name="AllowedExtensions"  default="html htm" description="Enter the file extensions you want to have working with &quot;static-pages&quot;. Separate them with a single whitespace. (Case insensitive)."/>
             <parameter datatype="number"  min_n_values="1"  max_n_values="1"  name="TemplatingEnabledP"  default="0" description="Set this to 1 if you want the pages that are scanned by static-pages to be templated. Otherwise set it to 0."/>
             <parameter datatype="string"  min_n_values="1"  max_n_values="1"  name="TemplatePath"  default="/packages/static-pages/www/templates/static" description="If you want to activate templating of static pages, you must tell the system where to find the adp template. Leave out the initial / and don't forget the filename. (the path is relative to [acs_root_dir] and .adp is implied).]"/>
+            <parameter datatype="string"  min_n_values="1"  max_n_values="1"  name="fs_root"  default="/www" description="Root folder of Static Pages tree, relative to acs_root_dir server root."/>
         </parameters>
 
     </version>

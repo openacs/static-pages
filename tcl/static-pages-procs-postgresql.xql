@@ -159,4 +159,25 @@ select '{' || content_item__get_title(:page_id) || '} ' || CASE WHEN show_commen
 </fullquery>
 
 
+<fullquery name="sp_get_page_id.page_and_package_ids">
+<querytext>
+select sp.static_page_id, f.package_id
+from static_pages sp, sp_folders f
+where sp.filename = :filename
+and sp.folder_id = f.folder_id
+-- Only want pages from the Static Pages package.
+and f.package_id in (
+  select package_id  from apm_packages
+  where package_key = :package_key )
+-- If the same page is in more than one instance of
+-- Static Pages for some reason, we only want one of
+-- them, and we don't care which.
+-- Oracle
+--and rownum <= 1
+-- PostgreSQL
+limit 1
+</querytext>
+</fullquery>
+
+
 </queryset>

@@ -77,16 +77,18 @@ create table static_pages (
 			constraint static_pgs_show_cmnts_chk
 			check (show_comments_p in ('t','f'))
 );
+
 comment on table static_pages is '
 	Extends the cr_items table to hold information on static pages.
 '; 
 comment on column static_pages.filename is '
 	The full path of the file (e.g. /web/my_site/www/books/index.html).
+  --
+  No, not anymore.  As of c. 2001/10/30 changes by daveb, it is a
+  RELATIVE path, relative to the page root (server/www/).  As of now,
+  it is relative to the server root (server/).  --atp@piskorski.com,
+  2002/12/12 16:56 EST
 ';
--- TODO: Why are we storing the absolute path to the static file?
--- That seems problematic to me. --atp@piskorski.com, 2001/08/22
--- 22:48 EDT
---
 comment on column static_pages.folder_id is '
 	ID of folder containing page.
 ';
