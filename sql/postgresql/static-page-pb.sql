@@ -4,7 +4,9 @@
 
 
 -- create or replace package body static_page as
-create	function static_page__new (
+
+
+create or replace	function static_page__new (
                 integer, 	-- static_page_id	in static_pages.static_page_id%TYPE
                          	--               default null,
                 integer, 	-- folder_id	in sp_folders.folder_id%TYPE,
@@ -102,7 +104,8 @@ create	function static_page__new (
                 return v_item_id;
 end;' language 'plpgsql';
 
-create	function static_page__new (
+
+create or replace	function static_page__new (
 
                 integer, 	-- folder_id	in sp_folders.folder_id%TYPE,
                 varchar, 	-- filename	in static_pages.filename%TYPE default null,
@@ -136,7 +139,7 @@ create	function static_page__new (
 end;' language 'plpgsql';
 
 
-create	function static_page__delete (
+create or replace	function static_page__delete (
                 integer         -- static_page_id in static_pages.static_page_id%TYPE
         ) returns integer as '
         declare
@@ -185,7 +188,7 @@ return 0;
 end;' language 'plpgsql';
 
 
-create	function static_page__get_root_folder (
+create or replace	function static_page__get_root_folder (
                 integer         -- package_id	in apm_packages.package_id%TYPE
         ) returns integer as '
         declare
@@ -206,8 +209,8 @@ begin
 			-- name NEEDS to be unique, label does not
                         v_folder_id := static_page__new_folder (
                                 null,
-				''sp_root'',      -- name
-                                ''sp_root'',       -- label
+				''sp_root_package_id_'' || p_package_id,      -- name
+                                ''sp_root_package_id_'' || p_package_id,       -- label
 				null,
 				null,
 				null,
@@ -242,7 +245,7 @@ begin
 end;' language 'plpgsql';
 
 
-create	function static_page__new_folder (
+create or replace	function static_page__new_folder (
                 integer,        -- folder_id	in sp_folders.folder_id%TYPE
                                 --        default null,
                 varchar,        -- name	in cr_items.name%TYPE,
@@ -349,7 +352,8 @@ create	function static_page__new_folder (
                 return v_folder_id;
 end;' language 'plpgsql';
 
-create	function static_page__delete_folder (
+
+create or replace	function static_page__delete_folder (
                 integer         -- folder_id	in sp_folders.folder_id%TYPE
         ) returns integer as '
         declare
@@ -377,7 +381,8 @@ create	function static_page__delete_folder (
 return 0;
 end;' language 'plpgsql';
 
-create	function static_page__delete_stale_items (
+
+create or replace	function static_page__delete_stale_items (
                 integer,	-- session_id	in sp_extant_files.session_id%TYPE,
                 integer		-- package_id	in apm_packages.package_id%TYPE
         ) returns integer as '
@@ -442,7 +447,7 @@ return 0;
 end;' language 'plpgsql';
 
  
-create	function static_page__grant_permission (
+create or replace	function static_page__grant_permission (
                 integer,	-- item_id in acs_permissions.object_id%TYPE,
                 integer,	-- grantee_id	in acs_permissions.grantee_id%TYPE,
                 varchar,	-- privilege	in acs_permissions.privilege%TYPE,
@@ -494,7 +499,7 @@ create	function static_page__grant_permission (
 end;' language 'plpgsql';
 
 
-create	function static_page__revoke_permission (
+create or replace	function static_page__revoke_permission (
                 integer,	-- item_id in acs_permissions.object_id%TYPE,
                 integer,	-- grantee_id	in acs_permissions.grantee_id%TYPE,
                 varchar,	-- privilege	in acs_permissions.privilege%TYPE,
@@ -545,7 +550,8 @@ create	function static_page__revoke_permission (
 		return 0;
 end;' language 'plpgsql';
 
-create	function static_page__five_n_spaces (
+
+create or replace	function static_page__five_n_spaces (
                 integer		-- n	in integer
         ) returns varchar as '
 	declare
@@ -559,7 +565,8 @@ create	function static_page__five_n_spaces (
                 return space_string;
 end;' language 'plpgsql';
 
-create	function static_page__set_show_comments_p (
+
+create or replace	function static_page__set_show_comments_p (
                 integer,	-- item_id	in acs_permissions.object_id%TYPE,
                 boolean		-- show_comments_p	in static_pages.show_comments_p%TYPE
         ) returns integer as '
@@ -573,7 +580,8 @@ create	function static_page__set_show_comments_p (
 		return 0;
 end;' language 'plpgsql';
 
-create	function static_page__get_show_comments_p (
+
+create or replace	function static_page__get_show_comments_p (
                 integer		-- item_id in acs_permissions.object_id%TYPE
         ) returns boolean as '
 	declare
@@ -585,5 +593,6 @@ create	function static_page__get_show_comments_p (
 
                 return v_show_comments_p;
 end;' language 'plpgsql';
+
 
 -- end static_page;

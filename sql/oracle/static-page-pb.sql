@@ -3,6 +3,7 @@
 -- @cvs-id $Id$ 
 -- @author Brandoch Calef (bcalef@arsdigita.com)
 
+set def off
 
 create or replace package body static_page as
 	function new (
@@ -121,8 +122,9 @@ create or replace package body static_page as
 
 		if folder_exists_p = 0 then
 			folder_id := static_page.new_folder (
-				name => 'sp_root',
-				label => 'sp_root'
+			  -- name NEEDS to be unique, label does not
+			  name  => 'sp_root_package_id_' || package_id,
+			  label => 'sp_root_package_id_' || package_id
 			);
 
 			update sp_folders 
