@@ -33,5 +33,6 @@ ad_proc static_page__url {
 } {
 
     db_1row sp_url ""
+    regsub -all {/www} $url {} url
     return "${url}"
 }
