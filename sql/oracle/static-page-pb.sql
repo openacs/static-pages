@@ -125,7 +125,8 @@ create or replace package body static_page as
 			folder_id := static_page.new_folder (
 			  -- name NEEDS to be unique, label does not
 			  name  => 'sp_root_package_id_' || package_id,
-			  label => 'sp_root_package_id_' || package_id
+			  label => 'sp_root_package_id_' || package_id,
+                          package_id => package_id
 			);
 
 			update sp_folders 
@@ -168,7 +169,9 @@ create or replace package body static_page as
 		creation_ip	in acs_objects.creation_ip%TYPE 
 					default null,
 		context_id	in acs_objects.context_id%TYPE 
-					default null
+					default null, 
+                package_id      in apm_packages.package_id%TYPE
+                                        default null
 	) return sp_folders.folder_id%TYPE is
 		v_folder_id	sp_folders.folder_id%TYPE;
 		v_parent_id	cr_items.parent_id%TYPE;

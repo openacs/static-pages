@@ -33,7 +33,8 @@
 			current_timestamp,	-- creation_date
 			NULL,			-- creation_user
 			NULL,			-- creation_ip
-			NULL			-- context_id
+			NULL,			-- context_id
+                        :package_id
                                       );
       </querytext>
 </fullquery>

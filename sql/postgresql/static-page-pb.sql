@@ -6,7 +6,7 @@
 -- create or replace package body static_page as
 
 
-create or replace	function static_page__new (
+create or replace function static_page__new (
                 integer, 	-- static_page_id	in static_pages.static_page_id%TYPE
                          	--               default null,
                 integer, 	-- folder_id	in sp_folders.folder_id%TYPE,
@@ -220,7 +220,8 @@ begin
 				null,
 				null,
 				null,
-				null
+				null,
+                                p_package_id
                         );
 
                         update sp_folders
@@ -249,7 +250,7 @@ begin
 end;' language 'plpgsql';
 
 
-create or replace	function static_page__new_folder (
+create or replace function static_page__new_folder (
                 integer,        -- folder_id	in sp_folders.folder_id%TYPE
                                 --        default null,
                 varchar,        -- name	in cr_items.name%TYPE,
@@ -262,8 +263,9 @@ create or replace	function static_page__new_folder (
                                 --        default null,
                 varchar,        -- creation_ip	in acs_objects.creation_ip%TYPE
                                 --        default null,
-                integer         -- context_id	in acs_objects.context_id%TYPE
+                integer,        -- context_id	in acs_objects.context_id%TYPE
                                 --        default null
+                integer         -- package_id
         ) returns integer as '
         declare
                 p_folder_id       alias for $1;
@@ -275,6 +277,7 @@ create or replace	function static_page__new_folder (
                 p_creation_user   alias for $7;
                 p_creation_ip     alias for $8;
                 p_context_id      alias for $9;
+                p_package_id      alias for $10;
 
                 v_folder_id	        sp_folders.folder_id%TYPE;
                 v_parent_id	        cr_items.parent_id%TYPE;
@@ -294,6 +297,19 @@ create or replace	function static_page__new_folder (
                         v_parent_id := p_parent_id;
                 end if;
 
+
+                if p_parent_id is not null then
+                        if p_package_id is null then
+                                -- Get the package_id from the parent:
+                                select package_id into v_package_id from sp_folders
+                                        where folder_id = p_parent_id;
+                        else
+                                v_package_id := p_package_id;
+                        end if;
+                else
+                        v_package_id := p_package_id;
+                end if;
+
                 v_folder_id := content_folder__new (
                         p_name,            -- name
                         p_label,           -- label
@@ -304,16 +320,13 @@ create or replace	function static_page__new_folder (
                         v_creation_date,   -- creation_date
                         p_creation_user,   -- creation_user
                         p_creation_ip,     -- creation_ip
-			''f''		-- secuity_inherit_p	
-
+			''f'',             -- secuity_inherit_p	
+                        v_package_id
                 );
 
-                if p_parent_id is not null then
-                        -- Get the package_id from the parent:
-                        select package_id into v_package_id from sp_folders
-                                where folder_id = p_parent_id;
 
-                        insert into sp_folders (folder_id, parent_id, package_id)
+                if p_parent_id is not null then
+                          insert into sp_folders (folder_id, parent_id, package_id)
                                 values (v_folder_id, p_parent_id, v_package_id);
 
 --                        update acs_objects set security_inherit_p = ''f''
@@ -331,26 +344,26 @@ create or replace	function static_page__new_folder (
                                 );
                         end loop;
                 else
-                        insert into sp_folders (folder_id, parent_id)
-                                values (v_folder_id, p_parent_id);
+                        insert into sp_folders (folder_id, parent_id, package_id)
+                                values (v_folder_id, p_parent_id, p_package_id);
 
-                -- if it''s a root folder, allow it to contain static pages and
-                -- other folders (subfolders will inherit these properties)
-                PERFORM  content_folder__register_content_type (
-                                v_folder_id,              -- folder_id
-                                ''static_page'',           -- content_type
-				''f''
-                        );
-                PERFORM  content_folder__register_content_type (
-                                v_folder_id,            -- folder_id
-                                ''content_revision'',      -- content_type
-				''f''
-                        );
-                PERFORM  content_folder__register_content_type (
-                                v_folder_id,            -- folder_id
-                                ''content_folder'',      -- content_type
-				''f''
-                        );
+                        -- if it''s a root folder, allow it to contain static pages and
+                        -- other folders (subfolders will inherit these properties)
+                        PERFORM  content_folder__register_content_type (
+                                        v_folder_id,              -- folder_id
+                                        ''static_page'',           -- content_type
+        				''f''
+                                );
+                        PERFORM  content_folder__register_content_type (
+                                        v_folder_id,            -- folder_id
+                                        ''content_revision'',      -- content_type
+        				''f''
+                                );
+                        PERFORM  content_folder__register_content_type (
+                                        v_folder_id,            -- folder_id
+                                        ''content_folder'',      -- content_type
+        				''f''
+                                );
                 end if;
 
                 return v_folder_id;

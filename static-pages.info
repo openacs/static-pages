@@ -7,7 +7,7 @@
     <initial-install-p>f</initial-install-p>
     <singleton-p>f</singleton-p>
 
-    <version name="5.0d1" url="http://openacs.org/repository/download/apm/static-pages-5.0d1.apm">
+    <version name="5.2.0d2" url="http://openacs.org/repository/download/apm/static-pages-5.2.0d2.apm">
     <database-support>
         <database>oracle</database>
         <database>postgresql</database>
@@ -19,11 +19,11 @@
         <vendor url="http://openacs.org">OpenACS</vendor>
         <description format="text/plain">Static Pages loads the static pages of a site into the database so that their contents are available to other packages, such as site-wide-search.  It also allows users to make comments on static pages.</description>
 
-        <provides url="static-pages" version="5.0d1"/>
-        <requires url="acs-content-repository" version="5.0d1"/>
-        <requires url="acs-kernel" version="5.0d13"/>
-        <requires url="acs-tcl" version="4.1"/>
-        <requires url="general-comments" version="4.0"/>
+        <provides url="static-pages" version="5.2.0d2"/>
+        <requires url="acs-content-repository" version="5.1.0d2"/>
+        <requires url="acs-kernel" version="5.2.0d1"/>
+        <requires url="acs-tcl" version="5.1.0d1"/>
+        <requires url="general-comments" version="4.1"/>
 
         <files>
             <file type="data_model_create" db_type="oracle" path="sql/oracle/static-pages-create.sql"/>

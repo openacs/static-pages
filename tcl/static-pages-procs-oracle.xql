@@ -11,7 +11,8 @@
 					    name	=> :cumulative_path,
 					    label	=> :cumulative_path,
 					    parent_id	=> :parent_folder_id,
-					    description	=> 'Static pages folder'
+					    description	=> 'Static pages folder',
+					    package_id	=> :package_id
 				    );
 			    end;
 

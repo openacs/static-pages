@@ -73,7 +73,9 @@ create or replace package static_page as
 		creation_ip	in acs_objects.creation_ip%TYPE 
 					default null,
 		context_id	in acs_objects.context_id%TYPE 
-					default null
+					default null,
+                package_id      in apm_packages.package_id%TYPE
+                                        default null
 	) return sp_folders.folder_id%TYPE;
 
 	procedure delete_folder (
