@@ -812,7 +812,7 @@ ad_proc -public sp_serve_html_page { } {
     } else {
         if { ! $templating_enabled_p } {
             # doing ns_returnfile here means we will get 304's when we can
-            ns_returnfile 200 text/plain $file
+            ns_returnfile 200 text/html $file
             return {}
         } else {
             set body [template::util::read_file $file]
