@@ -15,7 +15,7 @@
       <querytext>
 
 		select static_page_id from static_pages
-		where filename = :fs_filename
+		where filename = :sp_filename
 
       </querytext>
 </fullquery>

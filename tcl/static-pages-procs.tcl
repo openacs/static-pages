@@ -43,7 +43,7 @@ ad_proc -public sp_sync_cr_with_filesystem {
     @param folder_unchanged_proc The name of a Tcl proc to be called for each folder
                                  unchanged in the database.
 
-    @param fs_root The starting path in the filesystem.  Files below this point will 
+    @param fs_root The starting path in the filesystem. This is relative to the openacs install directory,  Files below this point will 
                    be scanned.
 
     @param root_folder_id The id of the root folder in the static-pages system (and in 
@@ -115,10 +115,14 @@ ad_proc -public sp_sync_cr_with_filesystem {
 	    # If the file isn't in the db:
 	    #    Insert it.
 
-	    set fs_filename $file
+	    # set sp_filename to the file path relative to the OpenACS
+	    # install dir, this is what gets inserted into the db - DaveB
+	    set sp_filename [sp_get_relative_file_path $file]
+
+	    
 	    if [db_0or1row check_db_for_page {
 		select static_page_id from static_pages
-		where filename = :fs_filename
+		where filename = :sp_filename
 	    }] {
 		db_1row get_db_page {
 		    select content as file_from_db from cr_revisions
@@ -175,7 +179,7 @@ ad_proc -public sp_sync_cr_with_filesystem {
 		set static_page_id [db_exec_plsql do_sp_new {
 		    begin
 			:1 := static_page.new(
-				  filename => :file,
+				  filename => :sp_filename,
 				  title => :page_title,
 				  folder_id => :parent_folder_id
 			      );
@@ -305,6 +309,26 @@ ad_proc -public sp_change_matching_display {
     "
 }
 
+ad_proc -private  sp_get_full_file_path { file } {
+    takes a relative path and returns the full file path
+} {
+    set full_path [cr_fs_path STATIC_PAGES]
+    append full_path $file
+    return $full_path
+}
+
+ad_proc -private sp_get_relative_file_path { file } {
+    Takes a full file path and returns the path relative to the
+    static-page storage directory, usualyl /web/openacs/www/
+} {
+    set relative_path [string range $file [string length [cr_fs_path STATIC_PAGES]] end]
+
+    ns_log notice "**[cr_fs_path STATIC_PAGES]**"
+    ns_log notice "relative path:$relative_path"
+    return $relative_path
+}
+
+ 
 ad_proc -private sp_get_page_info_query { page_id } {
     Returns a SQL query to get the page title and comment display policy.
 
@@ -343,8 +367,9 @@ ad_proc -public sp_serve_html_page { } {
     @creation-date 2001-01-23
 } {
     set filename [ad_conn file]
-
-    set page_id [util_memoize [list sp_get_page_id $filename]]
+    set sp_filename [sp_get_relative_file_path $filename]
+    
+    set page_id [util_memoize [list sp_get_page_id $sp_filename]]
 
     # If the page is in the db, serve it carefully; otherwise just dump it out.
     if { $page_id >= 0 } {

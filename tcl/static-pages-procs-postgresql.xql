@@ -25,16 +25,16 @@
 <fullquery name="sp_sync_cr_with_filesystem.create_new_folder">
       <querytext>
                 select static_page__new_folder (
-                        NULL,
-                        :directory,             -- name
+			NULL, 			-- folder_id	
+			:directory,             -- name
                         :directory,             -- label
-                        'Static pages folder',   -- description
-                        :parent_folder_id,      -- parent_id
-                        current_timestamp,
-                        NULL,
-                        NULL,
-                        NULL
-                );
+			'Static pages folder',   -- description
+			:parent_folder_id,      -- parent_id
+			current_timestamp,	-- creation_date
+			NULL,			-- creation_user
+			NULL,			-- creation_ip
+			NULL			-- context_id
+                                      );
       </querytext>
 </fullquery>
 
@@ -53,7 +53,7 @@
       <querytext>
                 select static_page__new(
                         :parent_folder_id,       -- folder_id
-                        :file,                  -- filename
+                        :sp_filename,                  -- filename
                         :page_title            -- title
 
                 );
@@ -76,8 +76,6 @@
       <querytext>
 	begin
 	perform static_page__delete_stale_items(:sync_session_id,:package_id);
---	 delete from sp_extant_folders where session_id = :sync_session_id;
---
 	 delete from sp_extant_files where session_id = :sync_session_id;
 	return null;
 	end;
