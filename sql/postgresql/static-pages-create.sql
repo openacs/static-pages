@@ -214,8 +214,8 @@ comment on column sp_extant_folders.folder_id is '
 
 -- Here's where we get our session_ids:
 
-create sequence sp_session_id_seq;
-create view sp_session_id_sequence as select nextval('sp_session_id_seq') as nextval;
+create sequence sp_session_id_sequence;
+create view sp_session_id_seq as select nextval('sp_session_id_sequence') as nextval;
 
 
 -- this also creates the acs_object type

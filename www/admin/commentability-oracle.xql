@@ -3,7 +3,6 @@
 	<rdbms><type>oracle</type><version>8.1.6</version></rdbms>
 <fullquery name="select_static_page">      
       <querytext>
-      FIX ME DECODE (USE SQL92 CASE) 
 	select spf.folder_id,
 		decode(spf.folder_id,:root_folder_id,'[acs_root_dir]/www/',content_item.get_title(spf.folder_id)||'/') as folder_name,
 		static_page.five_n_spaces(lev) as spaces,
