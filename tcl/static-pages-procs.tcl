@@ -4,7 +4,7 @@ ad_library {
 
     @author Brandoch Calef (bcalef@arsdigita.com)
     @creation-date 2001-01-22
-    @cvs-id $Id$
+    @cvs-id static-pages-procs.tcl,v 1.11.2.13 2003/02/06 13:05:51 jeffd Exp
 }
 
 
@@ -246,10 +246,7 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
 
     ns_mutex lock $mutex
 
-    if { ![nsv_array exists $nsv] } {
-        ns_mutex unlock $mutex
-        error "nsv array '$nsv' does not exist!"
-    } elseif { ![nsv_exists $nsv $package_id] } {
+    if { ![nsv_exists $nsv $package_id] } {
         # The package_id isn't in the array yet at all, so another copy
         # is not running.
         set other_start_time {}
