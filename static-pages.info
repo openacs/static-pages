@@ -31,6 +31,8 @@
             <file type="data_model" db_type="oracle" path="sql/oracle/static-pages-sws.sql"/>
             <file type="data_model_create" db_type="postgresql" path="sql/postgresql/static-pages-create.sql"/>
             <file type="data_model_drop" db_type="postgresql" path="sql/postgresql/static-pages-drop.sql"/>
+            <file type="data_model" db_type="postgresql" path="sql/postgresql/static-pages-sc-create.sql"/>
+            <file type="data_model" db_type="postgresql" path="sql/postgresql/static-pages-sc-drop.sql"/>
             <file type="data_model" db_type="postgresql" path="sql/postgresql/static-pages-sws-drop.sql"/>
             <file type="data_model" db_type="postgresql" path="sql/postgresql/static-pages-sws.sql"/>
             <file type="package_spec" path="static-pages.info"/>
@@ -39,6 +41,9 @@
             <file type="query_file" db_type="postgresql" path="tcl/static-pages-procs-postgresql.xql"/>
             <file type="tcl_procs" path="tcl/static-pages-procs.tcl"/>
             <file type="query_file" path="tcl/static-pages-procs.xql"/>
+            <file type="data_model" db_type="oracle" path="tcl/static-pages-sc-create.sql"/>
+            <file type="query_file" db_type="postgresql" path="tcl/static-pages-sc-procs-postgresql.xql"/>
+            <file type="tcl_procs" path="tcl/static-pages-sc-procs.tcl"/>
             <file type="content_page" path="www/admin/commentability-contain.tcl"/>
             <file type="query_file" db_type="oracle" path="www/admin/commentability-oracle.xql"/>
             <file type="query_file" db_type="postgresql" path="www/admin/commentability-postgresql.xql"/>
