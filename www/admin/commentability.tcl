@@ -8,13 +8,13 @@ ad_page_contract {
 } {
 } -properties {
     title:onevalue
-    context_bar:onevalue
+    context:onevalue
     acs_root:onevalue
     dir_tree:multirow
 }
 
 set title "Commentability designation"
-set context_bar [ad_admin_context_bar {index "Static Pages Admin"} $title]
+set context [list $title]
 set acs_root [acs_root_dir]
 
 set root_folder_id [sp_root_folder_id [ad_conn package_id]]

@@ -33,7 +33,7 @@ proc sp_changed_item { path id } {
 }
 
 set title "Filesystem search"
-set context_bar [ad_admin_context_bar {index "Static Pages Admin"} $title]
+set context_bar [ad_context_bar $title]
 
 
 ReturnHeaders
@@ -41,6 +41,7 @@ ns_write "<html><head><title>$title</title></head><body bgcolor=white>
 <h2>$title</h2>
 $context_bar
 <hr>
+Starting scan<br /><br />
 "
 
 set root_folder_id [sp_root_folder_id [ad_conn package_id]]
@@ -54,4 +55,4 @@ sp_sync_cr_with_filesystem \
 	"[acs_root_dir]/www" $root_folder_id
 
 
-ns_write "</body></html>\n"
+ns_write "<p><strong>Finished updating static pages</strong></body></html>\n"

@@ -8,7 +8,7 @@ ad_page_contract {
 } {
 } -properties {
     title:onevalue
-    context_bar:onevalue
+    context:onevalue
     n_static_pages:onevalue
     are:onevalue
     pages:onevalue
@@ -35,6 +35,4 @@ if { $n_static_pages == 1 } {
 
 set title "Static Pages Administration"
 
-set context_bar [ad_admin_context_bar $title]
-
-ad_return_template
+set context [list $title]

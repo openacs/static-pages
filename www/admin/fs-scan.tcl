@@ -8,7 +8,7 @@ ad_page_contract {
 } {
 } -properties {
     title:onevalue
-    context_bar:onevalue
+    context:onevalue
     file_items:multirow
 }
 
@@ -32,7 +32,7 @@ proc sp_changed_item { path id } {
 multirow create file_items path status
 
 set title "Filesystem search"
-set context_bar [ad_admin_context_bar {index "Static Pages Admin"} $title]
+set context [list $title]
 
 set root_folder_id [sp_root_folder_id [ad_conn package_id]]
 
