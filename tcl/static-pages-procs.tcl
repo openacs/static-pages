@@ -378,7 +378,6 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
                     set mesg "$proc_name: Error reading file: '$file':  [ns_quotehtml $errmsg]"
                     ns_log Error $mesg
                     if { ![empty_string_p $file_read_error_proc] } {
-                        ns_log Notice "$proc_name: about to run file_read_error_proc:"
                         uplevel $stack_depth [list $file_read_error_proc $file $static_page_id $mesg]
                     }
                     continue
@@ -449,7 +448,6 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
                     set mesg "$proc_name: Error reading file: '$file':  [ns_quotehtml $errmsg]"
                     ns_log Error $mesg
                     if { ![empty_string_p $file_read_error_proc] } {
-                        ns_log Notice "$proc_name: about to run file_read_error_proc:"
                         uplevel $stack_depth [list $file_read_error_proc $file $static_page_id $mesg]
                     }
                     continue
@@ -475,17 +473,33 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
                 # locking.  --atp@piskorski.com, 2001/08/27 01:20 EDT
 
                 set mime_type [sp_maybe_create_new_mime_type $sp_filename]
-		set static_page_id [db_exec_plsql do_sp_new {}]
-		# Check if -blobs [list $file_contents] would be faster:
-		db_dml insert_file_contents {} -blob_files [list $file]
 
-		if { [string length $file_add_proc] > 0 } {
-		    uplevel $stack_depth "$file_add_proc $file $static_page_id"
-		}
-		db_dml insert_file {
-		    insert into sp_extant_files (session_id,static_page_id)
-		    values (:sync_session_id,:static_page_id)
-		}
+                if { [catch {
+                    set static_page_id [db_exec_plsql do_sp_new {}]
+                } errmsg] } {
+                    # Something failed:
+
+                    set mesg "$proc_name: do_sp_new failed for file '$file' with error:  [ns_quotehtml $errmsg]"
+                    ns_log Error $mesg
+                    if { ![empty_string_p $file_read_error_proc] } {
+                        uplevel $stack_depth [list $file_read_error_proc $file $static_page_id $mesg]
+                    }
+                    continue
+
+                } else {
+                    # Everything is ok:
+
+                    # Check if -blobs [list $file_contents] would be faster:
+                    db_dml insert_file_contents {} -blob_files [list $file]
+
+                    if { [string length $file_add_proc] > 0 } {
+                        uplevel $stack_depth "$file_add_proc $file $static_page_id"
+                    }
+                    db_dml insert_file {
+                        insert into sp_extant_files (session_id,static_page_id)
+                        values (:sync_session_id,:static_page_id)
+                    }
+                }
 	    }
 	}
     }
@@ -686,68 +700,91 @@ ad_proc -public sp_flush_page { page_id } {
 ad_proc sp_maybe_create_new_mime_type {
     file_name
 } {
-    This proc should be identical to fs_maybe_create_new_mime_type
-    from the file-storage package.  However, we don't want to depend
-    on file-storage being loaded, so if it isn't, define our own
-    implementation here.  --atp@piskorski.com, 2002/12/15 19:34 EST
+
+    Contrary to the name, this proc does <em>not</em> ever insert a
+    new MIME type into the cr_mime_types table the way the
+    fs_maybe_create_new_mime_type proc does.  That File Storage proc
+    and the design cr_mime_types table it mucks with are fundamentally
+    flawed, and (c. Jan. 2003) there have been several major threads
+    in BBoard about that already:
+
+    <a href="http://openacs.org/forums/message-view?message_id=51830">one</a>,
+    <a href="http://openacs.org/forums/message-view?message_id=60512">two</a>,
+    <a href="http://openacs.org/forums/message-view?message_id=56310">three</a>.
+
+    And the old side-effecting implementation that inserted into
+    cr_mime_types led to some of the problems discussed in
+    <a href="http://openacs.org/bugtracker/openacs/bug?bug%5fnumber=145">Bug 145</a>.
 
     <p>
-    The content repository expects the MIME type to already be defined
-    when you upload content.  We use this procedure to add a new type
-    when we encounter something we haven't seen before.
+    The content repository <em>insists</em> that the MIME type already
+    be defined in cr_mime_types when you upload content.  Therefore,
+    first we look for a MIME type for this file extension in
+    cr_mime_types.  If we can't find a MIME type there, we might also
+    want to look in the AOLserver config file, <em>but</em>, that
+    would break things because the MIME type <em>must</em> be in
+    cr_mime_types.  If you have MIME types defined in your AOLserve
+    config file but not in cr_mime_types, you should add them to
+    cr_mime_types.
+
+    <p>
+    If no more specific MIME type for the file extension is found, we
+    return the "*/*" unknown MIME type.
+
+    <p>
+    <strong>Known Bugs:</strong>
+    <ul>
+
+      <li>If your file extension is not in cr_mime_types, your file
+      will get the default "*/*" MIME type.
+
+      <p>
+      <li>The default "*/*" MIME type is only created by
+      <code>acs-content-repository/sql/oracle/content-create.sql</code>
+      as of rev. 1.17, which should be part of the OpenACS 4.6.1
+      release but was <em>not</em> in 4.6.0.  If you don't have "*/*",
+      it is easy to add manually - for either Oracle or PostgreSQL,
+      just do:
+
+      	<blockquote><code>
+      	insert into cr_mime_types(label, mime_type, file_extension) values ('Unknown', '*/*', '');
+      	</code></blockquote>
+
+      <p>
+      <li>All use of cr_mime_types table should be replaced with the
+      new cr_extension_mime_type_map table (or equivalent), once that
+      work is done.
+
+    </ul>
+
+    <p>
+    --atp@piskorski.com, 2003/01/22 15:16 EST
 
     @author Andrew Piskorski (atp@piskorski.com)
     @creation-date 2002-12-15
 } {
     set proc_name {sp_maybe_create_new_mime_type}
-    set func {fs_maybe_create_new_mime_type}
+    set mime_type_unknown {*/*}
 
-    if { [nsv_exists api_proc_doc $func] ||
-         ![empty_string_p [namespace eval :: [list info procs $func]]]
-     } {
-        # The file-storage version of this proc exists, use it:
-        return [eval [list $func $file_name]]
-
-    } else {
-        # Fall back to local implementation:
-
-        set file_extension [string trimleft [file extension $file_name] "."]
-        if {[empty_string_p $file_extension]} {
-            return "*/*"
-        }
-
-        # TODO: This insert may fail due to a race condition.  Should be
-        # locking the cr_mime_types table first:
-        # --atp@piskorski.com, 2001/08/23 20:20 EDT
-
-        if {![db_0or1row select_mime_type {
-            select mime_type
-            from cr_mime_types
-            where file_extension = :file_extension
-        }]} {
-            # A mime type for this file extension does not exist
-            # in the database.  Check to see AOLServer can 
-            # generate a mime type.
-
-            set mime_type [ns_guesstype $file_name]
-            
-            # Note: If AOLServer can't determine a mime type, 
-            # ns_guesstype will return */*. We still record
-            # a mime type for this file extension.  At a later
-            # date, the mime type for the file extension may be
-            # updated and, as a result, the files with that
-            # file extension will be associated with the
-            # proper mime types.
-
-            db_dml new_mime_type {
-                insert into cr_mime_types
-                (mime_type, file_extension)
-                values
-                (:mime_type, :file_extension)
-            }
-        }
-        return $mime_type
+    set file_extension [string trimleft [file extension $file_name] "."]
+    if {[empty_string_p $file_extension]} {
+        set mime_type $mime_type_unknown
     }
+
+    if {![db_0or1row select_mime_type {
+        select mime_type
+        from cr_mime_types
+        where file_extension = :file_extension
+    }]} {
+        set mime_type $mime_type_unknown
+
+        #set nsd_mime_type [ns_guesstype $file_name]
+        #if { ![string equal $mime_type $nsd_mime_type] } {
+        #    ns_log Warning "$proc_name: For file extension '$file_extension', the only matching MIME type in cr_mime_types is '$mime_type', but AOLserver thinks the MIME type should be '$nsd_mime_type'."
+        #}
+    }
+
+    return $mime_type
 }
 
 
