@@ -29,6 +29,14 @@
       </querytext>
 </fullquery>
 
+<fullquery name="sp_sync_cr_with_filesystem.check_db_for_page">
+      <querytext>
+
+		select static_page_id from static_pages
+		where filename = :sp_filename
+
+      </querytext>
+</fullquery>
 
 <fullquery name="sp_sync_cr_with_filesystem.do_sp_new">
       <querytext>

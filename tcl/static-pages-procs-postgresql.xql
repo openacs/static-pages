@@ -41,20 +41,30 @@
  
 <fullquery name="sp_sync_cr_with_filesystem.update_db_file">      
       <querytext>
-
 		update cr_revisions set content = :sp_filename
 		where revision_id = content_item__get_live_revisions(:static_page_id)
+
+end;
    
       </querytext>
 </fullquery>
 
- 
+<fullquery name="sp_sync_cr_with_filesystem.check_db_for_page">
+      <querytext>
+
+		select static_page_id, mtime as mtime_from_db from static_pages
+		where filename = :sp_filename
+
+      </querytext>
+</fullquery>
+
 <fullquery name="sp_sync_cr_with_filesystem.do_sp_new">      
       <querytext>
                 select static_page__new(
                         :parent_folder_id,       -- folder_id
                         :sp_filename,                  -- filename
-                        :page_title            -- title
+                        :page_title,            -- title
+			:mtime_from_fs			-- mtime
 
                 );
       </querytext>
@@ -154,5 +164,6 @@ end;
 select '{' || content_item__get_title(:page_id) || '} ' || CASE WHEN show_comments_p=TRUE then '1' else '0' END from static_pages where static_page_id = :page_id
 	</querytext>
 </fullquery>
+
 
 </queryset>

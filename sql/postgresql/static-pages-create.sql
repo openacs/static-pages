@@ -156,7 +156,8 @@ create table static_pages (
                         references sp_folders,
         show_comments_p	boolean
                         default 't'
-                        not null
+                        not null,
+	mtime		integer
 );
 comment on table static_pages is '
         Extends the cr_items table to hold information on static pages.
@@ -170,6 +171,9 @@ comment on column static_pages.folder_id is '
 comment on column static_pages.show_comments_p is '
         Are comments shown on the page, or is the user simply offered a link
         to view the comments?
+';
+comment on column static_pages.mtime is '
+	Last modification time of file as reported by [file mtime]
 ';
 
 -- Another foreign key column:
@@ -268,8 +272,9 @@ create	function static_page__new (
                          	--               default null,
                 varchar, 	-- creation_ip	in acs_objects.creation_ip%TYPE
                                 --        default null,
-                integer 	-- context_id	in acs_objects.context_id%TYPE
+                integer, 	-- context_id	in acs_objects.context_id%TYPE
                                 --        default null
+		integer		-- mtime
         ) returns integer as '
 	declare
                 p_static_page_id        alias for $1;
@@ -282,6 +287,7 @@ create	function static_page__new (
                 p_creation_user         alias for $8;
                 p_creation_ip           alias for $9;
                 p_context_id            alias for $10;
+		p_mtime			alias for $11;
 
                 v_item_id	        static_pages.static_page_id%TYPE;
                 v_permission_row        RECORD;
@@ -338,12 +344,13 @@ create	function static_page__new (
 
                 -- Insert row into static_pages:
                 insert into static_pages
-                        (static_page_id, filename, folder_id, show_comments_p)
+                        (static_page_id, filename, folder_id, show_comments_p, mtime)
                 values (
                         v_item_id,
                         p_filename,
                         p_folder_id,
-                        p_show_comments_p
+                        p_show_comments_p,
+			p_mtime
                 );
 
                 return v_item_id;
@@ -353,12 +360,14 @@ create	function static_page__new (
 
                 integer, 	-- folder_id	in sp_folders.folder_id%TYPE,
                 varchar, 	-- filename	in static_pages.filename%TYPE default null,
-                varchar 	-- title	in cr_revisions.title%TYPE default null
+                varchar, 	-- title	in cr_revisions.title%TYPE default null
+		integer		-- mtime
         ) returns integer as '
 	declare
                 p_folder_id             alias for $1;
                 p_filename              alias for $2;
                 p_title                 alias for $3;
+		p_mtime			alias for $4;
                
 	        v_static_page_id	static_pages.static_page_id%TYPE;	       
                 v_item_id	        static_pages.static_page_id%TYPE;
@@ -374,7 +383,8 @@ create	function static_page__new (
 			   now(),	       -- creation_date
 			   NULL,	       -- creation_user
 			   NULL,	       -- creation_ip
-			   NULL		       -- conext_id
+			   NULL,	       -- conext_id
+			   p_mtime	       -- mtime
 			   );
 	       
 end;' language 'plpgsql';
@@ -839,6 +849,8 @@ create	function static_page__get_show_comments_p (
                 return v_show_comments_p;
 end;' language 'plpgsql';
 
+
+\i static-pages-sc-create.sql
 -- end static_page;
 
 

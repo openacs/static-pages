@@ -118,17 +118,12 @@ ad_proc -public sp_sync_cr_with_filesystem {
 	    # set sp_filename to the file path relative to the OpenACS
 	    # install dir, this is what gets inserted into the db - DaveB
 	    set sp_filename [sp_get_relative_file_path $file]
-
-	    
-	    if [db_0or1row check_db_for_page {
-		select static_page_id from static_pages
+	    set mtime_from_fs [file mtime $file]
+   	    if [db_0or1row check_db_for_page {
+		select static_page_id, mtime as mtime_from_db from static_pages
 		where filename = :sp_filename
 	    }] {
-		db_1row get_db_page {
-		    select content as file_from_db from cr_revisions
-		    where revision_id = content_item.get_live_revision(:static_page_id)
-		}
-		if { [catch {
+	       if { [catch {
 		    set fp [open $file r]
 		    set file_from_fs [read $fp]
 		    close $fp
@@ -136,12 +131,42 @@ ad_proc -public sp_sync_cr_with_filesystem {
 		    ad_return_error "Error reading file" \
 			    "This error was encountered while reading $file: $errmsg"
 		}
-		if { $file_from_fs != $file_from_db } {
+	    
+		set file_updated 0
+
+		set storage_type [db_string get_storage_type ""]
+
+		switch $storage_type {
+		    "file" {
+			if {$mtime_from_fs != $mtime_from_db} {
+			    set file_updated 1	    
+			}
+		    }
+			
+		     "lob" {
+			    db_1row get_db_page {
+				select content as file_from_db from cr_revisions
+				where revision_id = content_item.get_live_revision(:static_page_id)
+			    }
+			 if {$file_from_db != $file_from_fs} {
+			     set file_updated 1
+			 }
+		     }
+		}
+		
+		if {$file_updated == 1} {
 		    db_dml update_db_file {
 			update cr_revisions set content = empty_blob()
 			where revision_id = content_item.get_live_revision(:static_page_id)
 			returning content into :1
 		    } -blob_files [list $file]
+		    if {$storage_type=="file"} {
+
+			db_dml update_static_page {
+			    update static_pages set mtime = :mtime_from_fs
+			    where  static_page_id = :static_page_id
+			}
+		    }
 			if { [string length $file_change_proc] > 0 } {
 			    uplevel "$file_change_proc $file $static_page_id"
 			}

@@ -10,16 +10,12 @@
       </querytext>
 </fullquery>
 
-
-<fullquery name="sp_sync_cr_with_filesystem.check_db_for_page">
-      <querytext>
-
-		select static_page_id from static_pages
-		where filename = :sp_filename
-
-      </querytext>
+<fullquery name="sp_sync_cr_with_filesystem.get_storage_type">
+	<querytext>
+		select storage_type from cr_items
+			where item_id = :static_page_id
+	</querytext>
 </fullquery>
-
 
 
 <fullquery name="sp_sync_cr_with_filesystem.insert_file">
