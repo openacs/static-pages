@@ -1,5 +1,5 @@
 <master>
-<property name="sp_scripts">@sp_scripts@</property>
-<property name="title">@title@</property>
+<property name="sp_scripts">@sp_scripts;noquote@</property>
+<property name="title">@title;noquote@</property>
 @body@
 <div>Last modified: @file_mtime@</div>
