@@ -43,8 +43,6 @@
       <querytext>
 		update cr_revisions set content = :sp_filename
 		where revision_id = content_item__get_live_revisions(:static_page_id)
-
-end;
    
       </querytext>
 </fullquery>
