@@ -391,8 +391,6 @@ create	function static_page__delete (
         begin
                 -- Delete all permissions on this page:
 
-RAISE NOTICE ''***Deleting id:%'',p_static_page_id;
-
 	delete from acs_permissions where object_id = p_static_page_id;
 
                 -- Drop all comments on this page.  general-comments doesn''t have
@@ -407,7 +405,7 @@ RAISE NOTICE ''***Deleting id:%'',p_static_page_id;
                         where image_id in (
                                 select latest_revision
                                 from cr_items
-                                where parent_id = v_comment_row
+                                where parent_id = v_comment_row.comment_id
                        );
 
                         PERFORM acs_message__delete(v_comment_row.comment_id);
