@@ -12,8 +12,10 @@ ad_proc -public sp_sync_cr_with_filesystem {
 	-file_add_proc ""
 	-file_change_proc ""
 	-file_unchanged_proc ""
+        -file_read_error_proc ""
 	-folder_add_proc ""
 	-folder_unchanged_proc ""
+        -stack_depth 1
     }
     fs_root
     root_folder_id
@@ -54,6 +56,8 @@ ad_proc -public sp_sync_cr_with_filesystem {
     @author Brandoch Calef (bcalef@arsdigita.com)
     @creation-date 2001-02-07
 } {
+    set proc_name {sp_sync_cr_with_filesystem}
+
     set sync_session_id [db_nextval sp_session_id_seq]
 
     set fs_trimmed [string trimright $fs_root "/"]
@@ -111,6 +115,7 @@ ad_proc -public sp_sync_cr_with_filesystem {
 	    # install dir, this is what gets inserted into the db - DaveB
 	    set sp_filename [sp_get_relative_file_path $file]
 	    set mtime_from_fs [file mtime $file]
+
    	    if [db_0or1row check_db_for_page {
 		select static_page_id, mtime as mtime_from_db from static_pages
 		where filename = :sp_filename
@@ -120,8 +125,19 @@ ad_proc -public sp_sync_cr_with_filesystem {
 		    set file_from_fs [read $fp]
 		    close $fp
 		} errmsg]} {
-		    ad_return_error "Error reading file" \
-			    "This error was encountered while reading $file: $errmsg"
+                    # Log and return an appropriate message, then
+                    # continue on trying to process the other files.
+                    # We do NOT want to abort the whole scan just
+                    # because one file had problems:
+                    # --atp@piskorski.com, 2002/09/12 16:49 EDT
+
+                    set mesg "$proc_name: Error reading file: '$file':  [ns_quotehtml $errmsg]"
+                    ns_log Error $mesg
+                    if { ![empty_string_p $file_read_error_proc] } {
+                        ns_log Notice "$proc_name: about to run file_read_error_proc:"
+                        uplevel 1 [list $file_read_error_proc $file $static_page_id $mesg]
+                    }
+                    continue
 		}
 	    
 		set file_updated 0
@@ -172,16 +188,30 @@ ad_proc -public sp_sync_cr_with_filesystem {
 		    values (:sync_session_id,:static_page_id)
 		}
 	    } else {
+                # The file is NOT in the db yet at all:
+
 		# Try to extract a title:
 		if { [catch {
 		    set fp [open $file r]
 		    set file_contents [read $fp]
 		    close $fp
 		} errmsg]} {
-		    ad_return_error "Error reading file" \
-			    "This error was encountered while reading $file: $errmsg"
+                    # Log and return an appropriate message, then
+                    # continue on trying to process the other files.
+                    # We do NOT want to abort the whole scan just
+                    # because one file had problems:
+                    # --atp@piskorski.com, 2002/09/12 16:49 EDT
+
+                    set mesg "$proc_name: Error reading file: '$file':  [ns_quotehtml $errmsg]"
+                    ns_log Error $mesg
+                    if { ![empty_string_p $file_read_error_proc] } {
+                        ns_log Notice "$proc_name: about to run file_read_error_proc:"
+                        uplevel 1 [list $file_read_error_proc $file $static_page_id $mesg]
+                    }
+                    continue
 		}
 
+                # TODO:  This is very HTML specific:  --atp@piskorski.com, 2001/08/13 21:58 EDT
 		if { ![regexp -nocase {<title.*?>(.+?)</title} $file_contents match page_title] } {
 		    regexp {[^/]*$} $file page_title
 		}

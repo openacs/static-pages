@@ -18,18 +18,21 @@ ad_page_contract {
 # sp_sync_cr_with_filesystem callbacks to fill file_items with info.
 #
 proc sp_old_item { path id } {
-    upvar file_items file_items
-    ns_write "<br><code>$path</code>: <i>unchanged</i>"
+    ns_write "\n<br><code>$path</code>: <i>unchanged</i>"
 }
 proc sp_new_item { path id } {
-    upvar file_items file_items
-    ns_write "<br><code>$path</code>: <i>added</i>"
+    ns_write "\n<br><code>$path</code>: <i>added</i>"
 }
 proc sp_changed_item { path id } {
-    upvar file_items file_items
-    ns_write "<br><code>$path</code>: <i>updated</i>"
+    ns_write "\n<br><code>$path</code>: <i>updated</i>"
     # The title may have changed:
     sp_flush_page $id
+}
+
+proc sp_error_item { path id msg } {
+   ns_write "\n<br>
+<br><code>$path</code>: <strong>Error:</strong>
+<blockquote>$msg</blockquote>"
 }
 
 set title "Filesystem search"
@@ -50,6 +53,7 @@ sp_sync_cr_with_filesystem \
 	-file_unchanged_proc sp_old_item \
 	-file_add_proc sp_new_item \
 	-file_change_proc sp_changed_item \
+        -file_read_error_proc sp_error_item \
 	-folder_add_proc sp_new_item \
 	-folder_unchanged_proc sp_old_item \
 	"[acs_root_dir]/www" $root_folder_id
