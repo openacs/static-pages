@@ -26,9 +26,9 @@
       <querytext>
                 select static_page__new_folder (
 			NULL, 			-- folder_id	
-			:directory,             -- name
-                        :directory,             -- label
-			'Static pages folder',   -- description
+			:cumulative_path,       -- name
+                        :cumulative_path,       -- label
+			'Static pages folder',  -- description
 			:parent_folder_id,      -- parent_id
 			current_timestamp,	-- creation_date
 			NULL,			-- creation_user

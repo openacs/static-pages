@@ -80,16 +80,7 @@ ad_proc -public sp_sync_cr_with_filesystem {
 		    }]
 		    # If the folder doesn't exist, create it.
 		    if { $folder_id == 0} {
-			set folder_id [db_exec_plsql create_new_folder {
-			    begin
-				    :1 := static_page.new_folder (
-					    name	=> :directory,
-					    label	=> :directory,
-					    parent_id	=> :parent_folder_id,
-					    description	=> 'Static pages folder'
-				    );
-			    end;
-			}]
+			set folder_id [db_exec_plsql create_new_folder {}]
 			if { [string length $folder_add_proc] > 0 } {
 			    uplevel "$folder_add_proc $cumulative_path $folder_id"
 			}

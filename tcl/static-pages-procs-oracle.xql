@@ -8,8 +8,8 @@
 
 			    begin
 				    :1 := static_page.new_folder (
-					    name	=> :directory,
-					    label	=> :directory,
+					    name	=> :cumulative_path,
+					    label	=> :cumulative_path,
 					    parent_id	=> :parent_folder_id,
 					    description	=> 'Static pages folder'
 				    );
