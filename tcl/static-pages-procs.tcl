@@ -55,7 +55,7 @@ ad_proc -public sp_sync_cr_with_filesystem {
     @author Brandoch Calef (bcalef@arsdigita.com)
     @creation-date 2001-02-07
 } {
-    set sync_session_id [db_nextval sp_session_id_seq]
+    set sync_session_id [db_nextval sp_session_id_sequence]
 
     set fs_trimmed [string trimright $fs_root "/"]
     set fs_trimmed_length [string length $fs_trimmed]
