@@ -56,6 +56,44 @@
     </para>
 
     <orderedlist>
+      <listitem>
+	<simpara>
+	  Use the <a href="/acs-admin/apm/">APM</a> to install and
+	  enable the General Comments and Static Pages packages.
+	</simpara>
+      </listitem>
+
+      <listitem>
+	<simpara>
+	  Create a sub-folder (a.k.a. "site node") of the <a
+	  href="/admin/site-map/">Main Site</a>, named
+	  <computeroutput>gc</computeroutput> (or whatever you like),
+	  for the General Comments user interface.
+	</simpara>
+      </listitem>
+
+      <listitem>
+	<simpara>
+	  Create the "General Comments" application, and mount it at
+	  <computeroutput>/gc</computeroutput>.
+	</simpara>
+      </listitem>
+
+      <listitem>
+	<simpara>
+	  Create a sub-folder of the <a href="/admin/site-map/">Main
+	  Site</a>, named <computeroutput>static</computeroutput> (or
+	  whatever you like), for the Static Pages user interface.
+	</simpara>
+      </listitem>
+
+      <listitem>
+	<simpara>
+	  Create the "Static Pages" application, and mount it at
+	  <computeroutput>/static</computeroutput>.
+	</simpara>
+      </listitem>
+
       <listitem><simpara>
 	  Put some static pages somewhere under your server's pageroot
 	  (typically <filename>/web/service_name/www/</filename>).  This is 
