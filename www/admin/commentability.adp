@@ -7,13 +7,13 @@
 <table>
 <multiple name=dir_tree>
  <tr>
-  <td>@dir_tree.spaces@@dir_tree.folder_name@</td>
+  <td>@dir_tree.spaces;noquote@@dir_tree.folder_name@</td>
   <td><a href="commentability-toggle.tcl?item_id=@dir_tree.folder_id@&recurse=t">@dir_tree.folder_permission@</a></td> <td></td>
  </tr>
  <group column="folder_id">
   <if @dir_tree.filename@ not nil>
    <tr>
-    <td>@dir_tree.spaces@&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="../page-visit?page_id=@dir_tree.static_page_id@">@dir_tree.filename@</a></td>
+    <td>@dir_tree.spaces;noquote@&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<a href="../page-visit?page_id=@dir_tree.static_page_id@">@dir_tree.filename@</a></td>
     <td><a href="commentability-toggle.tcl?item_id=@dir_tree.static_page_id@&recurse=f">@dir_tree.file_permission@</a></td>
     <td><a href="display-policy-toggle.tcl?item_id=@dir_tree.static_page_id@">@dir_tree.display_policy@</a></td>
    </tr>
