@@ -702,8 +702,8 @@ create	function static_page__grant_permission (
                 p_grantee_id	alias for $2;
                 p_privilege	alias for $3;
                 p_recursive_p	alias for $4;
-		v_file_row	static_pages%ROWTYPE;
-		v_folder_row	sp_folders%ROWTYPE;
+		v_file_row	RECORD;
+		v_folder_row	RECORD;
         begin
                 if p_recursive_p = ''t'' then
                         -- For each folder that is a descendant of item_id, grant.
@@ -757,8 +757,8 @@ create	function static_page__revoke_permission (
                 p_grantee_id	alias for $2;
                 p_privilege	alias for $3;
                 p_recursive_p	alias for $4;
-		v_file_row	static_pages%ROWTYPE;
-		v_folder_row	sp_folders%ROWTYPE;
+		v_file_row	RECORD;
+		v_folder_row	RECORD;
         begin
                 if p_recursive_p = ''t'' then
                         -- For each folder that is a descendant of item_id, revoke.

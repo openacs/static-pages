@@ -26,7 +26,8 @@
 <form action="commentability-contain">
 Or change all files whose full paths contain:
 <table>
-<tr><td colspan=3><input type=text size=80 maxlength=80 name=contained_string>
+<tr><td colspan=3><input type=text size=80 maxlength=80
+name=contained_string value="">
 <br><font size=-1>
 For example, <code>w/doc</code> will match <code>@acs_root@/www/doc/foobar.html</code>
 and <code>@acs_root@/www/cow/doctor.html</code>.

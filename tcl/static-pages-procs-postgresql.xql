@@ -109,9 +109,10 @@
 
 <fullquery name="sp_change_matching_permissions.grant_or_revoke_matching_permissions">
 	<querytext>
-	    begin
-
-		for file_row in (
+	declare file_row RECORD;
+	begin
+	
+		for file_row in 
 		    select static_page_id from static_pages
 		    where folder_id in (
 			select folder_id from sp_folders where
@@ -120,7 +121,7 @@
 				where folder_id = :root_folder_id)
    				) and
 			filename like '%${contained_string}%'
-		) loop
+		loop
 
 		    PERFORM acs_permission__${grant_or_revoke}_permission(
 			    file_row.static_page_id,
@@ -128,7 +129,8 @@
 			    'general_comments_create'
 		    );
 	    end loop;
-	    end;
+return NULL;
+end;
 
 	</querytext>
 </fullquery>

@@ -6,9 +6,10 @@ ad_page_contract {
     @creation-date 2001-02-21
     @cvs-id $Id$
 } {
-    contained_string
     change_option
+    {contained_string ""}
 }
+
 
 set root_folder_id [sp_root_folder_id [ad_conn package_id]]
 
