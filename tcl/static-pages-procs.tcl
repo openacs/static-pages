@@ -432,6 +432,7 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
 		}
 	    } else {
                 # The file is NOT in the db yet at all:
+                set static_page_id {}
 
 		# Try to extract a title:
 		if { [catch {
