@@ -76,9 +76,9 @@ begin
         select coalesce(max(tree_sortkey),'''') into v_parent_sk 
           from sp_folders 
          where folder_id = new.parent_id;
-
-        new.tree_sortkey := v_parent_sk || ''/'' || tree_next_key(max_key);
 	end if;
+        new.tree_sortkey := v_parent_sk || ''/'' || tree_next_key(max_key);
+
 
         return new;
 
@@ -603,7 +603,7 @@ create	function static_page__delete_folder (
         begin
                 for v_folder_row in 
                         select folder_id from (
-                                select folder_id, tree_level(''folder_id'')  as path_depth from sp_folders
+                                select folder_id, tree_level(tree_sortkey)  as path_depth, tree_sortkey from sp_folders
 		where tree_sortkey like ( select tree_sortkey || ''%''
 		from sp_folders
 		where folder_id = p_folder_id)
@@ -653,7 +653,6 @@ create	function static_page__delete_stale_items (
 			   sp_extant_files
 				where session_id = p_session_id )
 	loop
-
 		PERFORM static_page__delete(v_stale_file_row.static_page_id);
 	end loop;
 
@@ -674,7 +673,7 @@ create	function static_page__delete_stale_items (
                                         where session_id = p_session_id
                                 )
                         ) dead,
-                        (select folder_id,tree_level(''folder_id'') as depth from sp_folders
+                        (select folder_id,tree_level(tree_sortkey) as depth, tree_sortkey from sp_folders
 		where tree_sortkey like ( select tree_sortkey || ''%''
 		from sp_folders
 		where folder_id = v_root_folder_id)
@@ -683,9 +682,8 @@ create	function static_page__delete_stale_items (
                                 and dead.folder_id <> v_root_folder_id
                         order by path.depth desc
                  loop
-                        delete from sp_folders
+		delete from sp_folders
                         where folder_id = v_stale_folder_row.folder_id;
-
                         perform content_folder__delete(v_stale_folder_row.folder_id);
                 end loop;
 
