@@ -8,6 +8,81 @@ ad_library {
 }
 
 
+ad_proc -public sp_sync_cr_with_filesystem_scheduled {{}} {
+
+    Sync the filesystem and the content repository in a scheduled
+    procedure, rather than manually.  Calls sp_sync_cr_with_filesystem
+    just like the www/admin/fs-scan-progress.tcl page does.
+
+    <p>
+    Note that if you have comments turned on, be <em>very carefull</em>
+    running this, as the current implementation of
+    sp_sync_cr_with_filesystem will <em>destroy</em> any user
+    contributed comments on the file if you temporarily delete the
+    file, then run that procedure.
+
+    @author Andrew Piskorski (atp@piskorski.com)
+    @creation-date 2002/09/12
+} {
+    set proc_name {sp_sync_cr_with_filesystem_scheduled}
+    ns_log Notice "$proc_name: Starting."
+
+    # sp_sync_cr_with_filesystem callbacks to fill file_items with info:
+
+    proc sp_sch_old_item { path id } {}
+    proc sp_sch_new_item { path id } {}
+    proc sp_sch_changed_item { path id } {
+        # The title may have changed:
+        sp_flush_page $id
+    }
+
+    # TODO: We can have more than one package instance, so must decide
+    # here WHICH package instance to run the sync for.  This should
+    # probably be something configurable for each package instance from
+    # the admin page, but for now we simply find and sync ALL package
+    # instances: --atp@piskorski.com, 2002/09/12 14:02 EDT
+
+    set package_key [sp_package_key_is]
+
+    db_foreach each_apm_package_instance {
+        select  package_id, instance_name
+        from apm_packages
+        where package_key = :package_key
+        order by package_id
+    } {
+        set root_folder_id [sp_root_folder_id $package_id]
+        set fs_root "[acs_root_dir][ad_parameter -package_id $package_id {fs_root}]"
+
+        ns_log Notice "$proc_name: About to scan the filesystem for:  package_id '$package_id', instance_name '$instance_name', fs_root '$fs_root':"
+
+        # If our call to sp_sync_cr_with_filesystem fails for some
+        # reason, want to continue on trying the other package
+        # instances:
+
+        set sync_proc {sp_sync_cr_with_filesystem}
+        if { [catch {
+            set result [$sync_proc  -package_id $package_id \
+                            -file_unchanged_proc    sp_sch_old_item \
+                            -file_add_proc          sp_sch_new_item \
+                            -file_change_proc       sp_sch_changed_item \
+                            -folder_add_proc        sp_sch_new_item \
+                            -folder_unchanged_proc  sp_sch_old_item \
+                            $fs_root $root_folder_id]
+        } errmsg] } {
+            global errorInfo
+            ns_log Error "$proc_name: For package_id: '$package_id', $sync_proc failed with error:\n${errorInfo}"
+        } else {
+            ns_log Notice "$proc_name: For package_id: '$package_id': $result"
+        }
+
+    } if_no_rows {
+        ns_log Warning "$proc_name: NO package ids found for package key: '$package_key'."
+    }
+
+    ns_log Notice "$proc_name: Done."
+}
+
+
 ad_proc -public sp_sync_cr_with_filesystem {
     {
         -file_add_proc ""

@@ -26,4 +26,11 @@ ns_share -init { set sp_sync_cr_with_filesystem_mutex [ns_mutex create] } sp_syn
 sp_register_extension
 
 
+# There is no ad_schedule_daily proc, so we have to use
+# ns_schedule_daily instead:
+#
+# Once per night, at 4 am:
+#ns_schedule_daily -thread 04 00 sp_sync_cr_with_filesystem_scheduled
+
+
 ns_log notice "static-pages-init.tcl loaded"
