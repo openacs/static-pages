@@ -24,5 +24,5 @@ if { ![db_0or1row sp_path { select filename from static_pages where static_page_
 #}
 
 
-ad_returnredirect [string range $filename [string length "[acs_root_dir]/www"] end]
+ad_returnredirect $filename
 
