@@ -62,7 +62,6 @@
             <file type="documentation" path="www/doc/xml/installation.xml"/>
             <file type="documentation" path="www/doc/xml/requirements.xml"/>
             <file type="content_page" path="www/index.tcl"/>
-            <file type="query_file" path="www/index.xql"/>
             <file type="content_page" path="www/page-visit.tcl"/>
         </files>
         <parameters>
