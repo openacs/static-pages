@@ -814,7 +814,8 @@ ad_proc -public sp_serve_html_page { } {
         set body [template::util::read_file $file]
     }
 
-    if { [ad_parameter -package_id $package_id TemplatingEnabledP] } {
+    set templating_enabled [ad_parameter -package_id $package_id TemplatingEnabledP]
+    if { ![empty_string_p $templating_enabled] && $templating_enabled } {
 	# Strip out the <body>..</body> part as page will now be part of a master template
 	set headers ""
 	set sp_scripts ""
