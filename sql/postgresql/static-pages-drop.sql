@@ -64,4 +64,4 @@ drop function sp_folders_insert_tr();
 drop function sp_folders_update_tr();
 drop table sp_folders;
 
-
+\i static-pages-sc-drop.sql
