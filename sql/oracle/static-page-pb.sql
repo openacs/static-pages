@@ -22,6 +22,7 @@ create or replace package body static_page as
 					default null,
 		context_id	in acs_objects.context_id%TYPE 
 					default null
+		,mime_type      in cr_revisions.mime_type%TYPE  default 'text/html'
 	) return static_pages.static_page_id%TYPE is
 		v_item_id	static_pages.static_page_id%TYPE;
 	begin
@@ -34,7 +35,7 @@ create or replace package body static_page as
 			parent_id	=> static_page.new.folder_id,
 			name	=> static_page.new.filename,
 			title	=> static_page.new.title,
-			mime_type	=> 'text/html',
+			mime_type       => static_page.new.mime_type,
 			creation_date	=> static_page.new.creation_date,
 			creation_user	=> static_page.new.creation_user,
 			creation_ip	=> static_page.new.creation_ip,

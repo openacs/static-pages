@@ -40,26 +40,23 @@
 
 <fullquery name="sp_sync_cr_with_filesystem_internal.do_sp_new">
       <querytext>
-
-		    begin
-			:1 := static_page.new(
-				  filename => :sp_filename,
-				  title => :page_title,
-				  folder_id => :parent_folder_id
-			      );
-		    end;
-
+begin
+:1 := static_page.new(
+  filename   => :sp_filename
+  ,title     => :page_title
+  ,folder_id => :parent_folder_id
+  ,mime_type => :mime_type
+);
+end;
       </querytext>
 </fullquery>
 
 
 <fullquery name="sp_sync_cr_with_filesystem_internal.insert_file_contents">
       <querytext>
-
 		    update cr_revisions set content = empty_blob()
 		    where revision_id = content_item.get_live_revision(:static_page_id)
 		    returning content into :1
-
       </querytext>
 </fullquery>
 

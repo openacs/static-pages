@@ -23,6 +23,7 @@ create or replace	function static_page__new (
                 integer, 	-- context_id	in acs_objects.context_id%TYPE
                                 --        default null
 		integer		-- mtime
+		,varchar        -- mime_type	in cr_revisions.mime_type%TYPE  default 'text/html'
         ) returns integer as '
 	declare
                 p_static_page_id        alias for $1;
@@ -36,12 +37,12 @@ create or replace	function static_page__new (
                 p_creation_ip           alias for $9;
                 p_context_id            alias for $10;
 		p_mtime			alias for $11;
+		p_mime_type		alias for $12;
 
                 v_item_id	        static_pages.static_page_id%TYPE;
                 v_permission_row        RECORD;
 		v_revision_id		integer;
 		v_is_live		boolean default ''t'';
-		v_mime_type		cr_revisions.mime_type%TYPE default ''text/html'';
 		v_storage_type		cr_items.storage_type%TYPE default ''file'';
         begin
                 -- Create content item; this also makes the content revision.
@@ -59,7 +60,7 @@ create or replace	function static_page__new (
                         p_context_id,                   -- context_id
                         p_creation_ip,                  -- creation_ip
                         v_is_live,                          -- is_live
-                        v_mime_type,                  -- mime_type
+                        p_mime_type,			-- mime_type
 			p_content,                       -- text
 			v_storage_type,			 -- storage_type
 			FALSE,				 -- security_inherit_p
@@ -111,12 +112,14 @@ create or replace	function static_page__new (
                 varchar, 	-- filename	in static_pages.filename%TYPE default null,
                 varchar, 	-- title	in cr_revisions.title%TYPE default null
 		integer		-- mtime
+		,varchar        -- mime_type	in cr_revisions.mime_type%TYPE  default 'text/html'
         ) returns integer as '
 	declare
                 p_folder_id             alias for $1;
                 p_filename              alias for $2;
                 p_title                 alias for $3;
 		p_mtime			alias for $4;
+		p_mime_type		alias for $5;
                
 	        v_static_page_id	static_pages.static_page_id%TYPE;	       
                 v_item_id	        static_pages.static_page_id%TYPE;
@@ -134,6 +137,7 @@ create or replace	function static_page__new (
 			   NULL,	       -- creation_ip
 			   NULL,	       -- conext_id
 			   p_mtime	       -- mtime
+			   ,p_mime_type	       -- mime_type
 			   );
 	       
 end;' language 'plpgsql';

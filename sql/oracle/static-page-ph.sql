@@ -28,6 +28,7 @@ create or replace package static_page as
 					default null,
 		context_id	in acs_objects.context_id%TYPE 
 					default null
+		,mime_type      in cr_revisions.mime_type%TYPE  default 'text/html'
 	) return static_pages.static_page_id%TYPE;
 
 	procedure delete (

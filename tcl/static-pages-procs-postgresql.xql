@@ -58,24 +58,20 @@
 
 <fullquery name="sp_sync_cr_with_filesystem_internal.do_sp_new">      
       <querytext>
-                select static_page__new(
-                        :parent_folder_id,       -- folder_id
-                        :sp_filename,                  -- filename
-                        :page_title,            -- title
-			:mtime_from_fs			-- mtime
-
-                );
+select static_page__new(
+  :parent_folder_id,  -- folder_id
+  :sp_filename,       -- filename
+  :page_title,        -- title
+  :mtime_from_fs      -- mtime
+  ,:mime_type         -- mime_type
+);
       </querytext>
 </fullquery>
 
 <fullquery name="sp_sync_cr_with_filesystem_internal.insert_file_contents">
       <querytext>
-
 		update cr_revisions set content = :sp_filename
-		where revision_id = content_item__get_live_revisions(:static_page_id)
-
-
-      </querytext>
+		where revision_id = content_item__get_live_revisions(:static_page_id)      </querytext>
 </fullquery>
 
 

@@ -465,21 +465,11 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
                 # calling static_page.new - thus the addition of mutex
                 # locking.  --atp@piskorski.com, 2001/08/27 01:20 EDT
 
-		set static_page_id [db_exec_plsql do_sp_new {
-		    begin
-			:1 := static_page.new(
-				  filename => :sp_filename,
-				  title => :page_title,
-				  folder_id => :parent_folder_id
-			      );
-		    end;
-		}]
+                set mime_type [sp_maybe_create_new_mime_type $sp_filename]
+		set static_page_id [db_exec_plsql do_sp_new {}]
 		# Check if -blobs [list $file_contents] would be faster:
-		db_dml insert_file_contents {
-		    update cr_revisions set content = empty_blob()
-		    where revision_id = content_item.get_live_revision(:static_page_id)
-		    returning content into :1
-		} -blob_files [list $file]
+		db_dml insert_file_contents {} -blob_files [list $file]
+
 		if { [string length $file_add_proc] > 0 } {
 		    uplevel $stack_depth "$file_add_proc $file $static_page_id"
 		}
@@ -681,6 +671,73 @@ ad_proc -public sp_flush_page { page_id } {
     @creation-date 2001-02-23
 } {
     util_memoize_flush [list sp_get_page_info_query $page_id]
+}
+
+
+ad_proc sp_maybe_create_new_mime_type {
+    file_name
+} {
+    This proc should be identical to fs_maybe_create_new_mime_type
+    from the file-storage package.  However, we don't want to depend
+    on file-storage being loaded, so if it isn't, define our own
+    implementation here.  --atp@piskorski.com, 2002/12/15 19:34 EST
+
+    <p>
+    The content repository expects the MIME type to already be defined
+    when you upload content.  We use this procedure to add a new type
+    when we encounter something we haven't seen before.
+
+    @author Andrew Piskorski (atp@piskorski.com)
+    @creation-date 2002-12-15
+} {
+    set func {fs_maybe_create_new_mime_type}
+
+    if { [nsv_exists api_proc_doc $func] ||
+         ![empty_string_p [namespace eval :: [list info procs $func]]]
+     } {
+        # The file-storage version of this proc exists, use it:
+        return [list $func $file_name]
+
+    } else {
+        # Fall back to local implementation:
+
+        set file_extension [string trimleft [file extension $file_name] "."]
+        if {[empty_string_p $file_extension]} {
+            return "*/*"
+        }
+
+        # TODO: This insert may fail due to a race condition.  Should be
+        # locking the cr_mime_types table first:
+        # --atp@piskorski.com, 2001/08/23 20:20 EDT
+
+        if {![db_0or1row select_mime_type {
+            select mime_type
+            from cr_mime_types
+            where file_extension = :file_extension
+        }]} {
+            # A mime type for this file extension does not exist
+            # in the database.  Check to see AOLServer can 
+            # generate a mime type.
+
+            set mime_type [ns_guesstype $file_name]
+            
+            # Note: If AOLServer can't determine a mime type, 
+            # ns_guesstype will return */*. We still record
+            # a mime type for this file extension.  At a later
+            # date, the mime type for the file extension may be
+            # updated and, as a result, the files with that
+            # file extension will be associated with the
+            # proper mime types.
+
+            db_dml new_mime_type {
+                insert into cr_mime_types
+                (mime_type, file_extension)
+                values
+                (:mime_type, :file_extension)
+            }
+        }
+        return $mime_type
+    }
 }
 
 
