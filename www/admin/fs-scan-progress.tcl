@@ -37,7 +37,6 @@ proc sp_error_item { path id msg } {
 
 set title "Filesystem search"
 set context_bar [ad_context_bar $title]
-#set context_bar [ad_admin_context_bar {index "Static Pages Admin"} $title]
 
 
 ReturnHeaders
@@ -49,11 +48,7 @@ $context_bar
 
 set package_id [ad_conn package_id]
 set root_folder_id [sp_root_folder_id $package_id]
-
-# TODO: Add the fs_root parameter to the package:
-# --atp@piskorski.com, 2002/12/11 18:12 EST
-#set fs_root "[acs_root_dir][ad_parameter -package_id $package_id {fs_root}]"
-set fs_root "[acs_root_dir]/www"
+set fs_root "[acs_root_dir][ad_parameter -package_id $package_id {fs_root}]"
 
 ns_write "
 <p>

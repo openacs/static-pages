@@ -2,7 +2,8 @@
 <property name="title">@title@</property>
 <property name="context">@context@</property>
 
-<p>There @are@ @n_static_pages@ static @pages@ in the system.</p>
+<p>There @are@ @n_static_pages@ static @pages@ in the 
+tree rooted at <code>@fs_root@</code>.</p>
 
 <p>
 <a href="fs-scan-progress">Scan filesystem for static pages</a>

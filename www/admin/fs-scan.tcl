@@ -39,11 +39,10 @@ multirow create file_items path status status_msg
 
 set title "Filesystem search"
 set context [list $title]
-#set context_bar [ad_admin_context_bar {index "Static Pages Admin"} $title]
 
 set package_id [ad_conn package_id]
 set root_folder_id [sp_root_folder_id $package_id]
-set fs_root "[acs_root_dir]/www"
+set fs_root "[acs_root_dir][ad_parameter -package_id $package_id {fs_root}]"
 
 set result [sp_sync_cr_with_filesystem \
 	-file_unchanged_proc sp_old_item \

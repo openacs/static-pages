@@ -234,7 +234,6 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
 	    set parent_folder_id $root_folder_id
 	    foreach directory $path {
 		append cumulative_path "$directory/"
-                ns_log Notice "atp:cumulative_path: '$cumulative_path', root_folder_id: '$root_folder_id'"
 		if (![info exists path_exists($cumulative_path)]) {
 		    # check db
 		    set folder_id [db_string get_folder_id {
@@ -442,6 +441,11 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
 	end;
     }
 
+    # TODO: We should have a sp_deleted_item hook just like we do for
+    # new, old, and changd items.  As it is now, we delete the file
+    # out of the database but provide NO notification that we did so.
+    # --atp@piskorski.com, 2002/12/12 12:43 EST
+
     sp_sync_cr_with_filesystem_unlock $package_id
     set return_mesg "Done."
     return 0
@@ -574,14 +578,24 @@ ad_proc -private sp_get_page_info_query { page_id } {
 
 
 ad_proc -private sp_get_page_id { filename } {
-    Gets page_id
+    Returns a two item list of the page_id and the static-pages
+    package_id it belongs to.
+
     @author Dave Bauer (dave@thedesignexperience.org)
     @creation-date 2001-07-30
 } {
-    return [list [db_string search_page "
-    select static_page_id from static_pages sp, sp_folders spf 
-               where filename='$filename' and sp.folder_id=spf.folder_id
-               and package_id=[apm_package_id_from_key "static-pages"]" -default -1]]
+    # This package is no longer a singleton, so can't use
+    # apm_package_id_from_key here: --atp@piskorski.com, 2001/08/26
+    # 22:37 EDT
+
+    set package_key [sp_package_key_is]
+    if { [db_0or1row page_and_package_ids {}] } {
+        set results [list $static_page_id $package_id]
+    } else {
+        set results [list -1 -1]
+    }
+
+    return $results
 }
 
 ad_proc -public sp_flush_page { page_id } {
@@ -594,6 +608,18 @@ ad_proc -public sp_flush_page { page_id } {
     util_memoize_flush [list sp_get_page_info_query $page_id]
 }
 
+
+ad_proc -public sp_package_key_is {} {
+   Simply returns the package key string for this package.
+   @author Andrew Piskorski (atp@piskorski.com)
+   @creation-date 2001/08/26
+} {
+   # TODO: Might want to have this pull and cache the actual key from
+   # the database.
+   return {static-pages}
+}
+
+
 ad_proc -public sp_serve_html_page { } {
     Registered proc to serve up static pages.
 
@@ -602,10 +628,14 @@ ad_proc -public sp_serve_html_page { } {
 } {
     set filename [ad_conn file]
     set sp_filename [sp_get_relative_file_path $filename]
-     
-    set page_id [util_memoize [list sp_get_page_id $sp_filename]]
 
-    set package_id [nsv_get static_pages package_id]
+    # In order to determine per-instance parameters like
+    # TemplatingEnabledP, need to know the package_id of the
+    # static-pages instance where this page is located, which is
+    # likely NOT the package_id returned by [ad_conn package_id]:
+
+    foreach [list page_id package_id] \
+        [util_memoize [list sp_get_page_id $sp_filename]] { break }
 
     set file [ad_conn file]
     ad_conn -set subsite_id [site_node_closest_ancestor_package "acs-subsite"]
@@ -613,6 +643,10 @@ ad_proc -public sp_serve_html_page { } {
     # If the page is in the db, serve it carefully; otherwise just dump it out.
     if { $page_id >= 0 } {
         set page_info [util_memoize [list sp_get_page_info_query $page_id]]
+
+        # TODO: Below, what if we only allow registered users to make
+        # comments?  Or some smaller group of users?  What then?
+        # --atp@piskorski.com, 2001/08/22 23:09 EDT
 
         # We only show the link here if the_public has 
         # general_comments_create privilege on the page.  Why the_public
@@ -671,13 +705,47 @@ ad_proc -public sp_serve_html_page { } {
     }
 }
 
+
 ad_proc -private sp_register_extension {} {
     Register the handler for each static page file extension.
 } {
-    foreach extension [split [string tolower [string trim [ad_parameter -package_id [apm_package_id_from_key static-pages] AllowedExtensions]]] " "] {
-	rp_register_extension_handler $extension sp_serve_html_page
-	rp_register_extension_handler [string toupper $extension] sp_serve_html_page
+    set proc_name {sp_register_extension}
+
+    set package_key [sp_package_key_is]
+    set package_ids [db_list all_static_pages_package_instances {
+        select package_id
+        from apm_packages
+        where package_key = :package_key
+    }]
+
+    # Generate unique list of all file-name extensions used by all
+    # package instances:
+
+    array set extensions_arr [list]
+    foreach package_id $package_ids {
+        foreach extension [split [string tolower [string trim [ad_parameter -package_id $package_id AllowedExtensions]]] " "] {
+            set extensions_arr($extension) {}
+        }
+    }
+
+    foreach extension [array names extensions_arr] {
+        # TODO: Are we supposed to use the sp_serve_html_page proc for
+        # ALL file-name extensions, even if they're PDF or MS Word
+        # documents?  I think not!  Need a better way to map file-name
+        # extensions to proper static-pages extension handler procs.
+        # --atp@piskorski.com, 2002/12/11 22:55 EST
+
+        if { [regexp {htm} $extension] } {
+            set handler_proc {sp_serve_html_page}
+            rp_register_extension_handler $extension $handler_proc
+            rp_register_extension_handler [string toupper $extension] $handler_proc
+        } else {
+            ns_log Notice "$proc_name:  NOT registering any proc to handle files with extension '$extension'."
+
+            # TODO: Add a PDF or other extension handler?  Necessary
+            # only if you want to be able to make comments on non-HTML
+            # files, I think.
+            # --atp@piskorski.com, 2002/12/11 22:55 EST
+        }
     }
 }
-# Register the handler for each static page file extension.
-sp_register_extension
