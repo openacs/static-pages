@@ -3,7 +3,7 @@
 <queryset>
    <rdbms><type>oracle</type><version>8.1.6</version></rdbms>
 
-<fullquery name="sp_sync_cr_with_filesystem.create_new_folder">
+<fullquery name="sp_sync_cr_with_filesystem_internal.create_new_folder">
       <querytext>
 
 			    begin
@@ -19,7 +19,7 @@
 </fullquery>
 
 
-<fullquery name="sp_sync_cr_with_filesystem.update_db_file">
+<fullquery name="sp_sync_cr_with_filesystem_internal.update_db_file">
       <querytext>
 
 			update cr_revisions set content = empty_blob()
@@ -29,7 +29,7 @@
       </querytext>
 </fullquery>
 
-<fullquery name="sp_sync_cr_with_filesystem.check_db_for_page">
+<fullquery name="sp_sync_cr_with_filesystem_internal.check_db_for_page">
       <querytext>
 
 		select static_page_id from static_pages
@@ -38,33 +38,30 @@
       </querytext>
 </fullquery>
 
-<fullquery name="sp_sync_cr_with_filesystem.do_sp_new">
+<fullquery name="sp_sync_cr_with_filesystem_internal.do_sp_new">
       <querytext>
-
-		    begin
-			:1 := static_page.new(
-				  filename => :sp_filename,
-				  title => :page_title,
-				  folder_id => :parent_folder_id
-			      );
-		    end;
-
+begin
+:1 := static_page.new(
+  filename   => :sp_filename
+  ,title     => :page_title
+  ,folder_id => :parent_folder_id
+  ,mime_type => :mime_type
+);
+end;
       </querytext>
 </fullquery>
 
 
-<fullquery name="sp_sync_cr_with_filesystem.insert_file_contents">
+<fullquery name="sp_sync_cr_with_filesystem_internal.insert_file_contents">
       <querytext>
-
 		    update cr_revisions set content = empty_blob()
 		    where revision_id = content_item.get_live_revision(:static_page_id)
 		    returning content into :1
-
       </querytext>
 </fullquery>
 
 
-<fullquery name="sp_sync_cr_with_filesystem.delete_old_files">
+<fullquery name="sp_sync_cr_with_filesystem_internal.delete_old_files">
       <querytext>
 
 	begin
@@ -88,7 +85,7 @@
       </querytext>
 </fullquery>
 
-<fullquery name="sp_sync_cr_with_filesystem.get_db_page">
+<fullquery name="sp_sync_cr_with_filesystem_internal.get_db_page">
       <querytext>
 
 		    select content as file_from_db from cr_revisions
@@ -98,7 +95,7 @@
 </fullquery>
 
 
-<fullquery name="sp_sync_cr_with_filesystem.get_folder_id">
+<fullquery name="sp_sync_cr_with_filesystem_internal.get_folder_id">
       <querytext>
 
         select nvl((select item_id from cr_items where name=:cumulative_path),0)
@@ -166,5 +163,36 @@ select '{'||content_item.get_title($page_id)||'} '||decode(show_comments_p,'t',1
 
 </querytext>
 </fullquery>
+
+
+<fullquery name="sp_get_page_id.page_and_package_ids">
+<querytext>
+select sp.static_page_id, f.package_id
+from static_pages sp, sp_folders f
+where sp.filename = :filename
+and sp.folder_id = f.folder_id
+-- Only want pages from the Static Pages package.
+and f.package_id in (
+  select package_id  from apm_packages
+  where package_key = :package_key )
+-- If the same page is in more than one instance of
+-- Static Pages for some reason, we only want one of
+-- them, and we don't care which.
+-- Oracle
+and rownum <= 1
+-- PostgreSQL
+--limit 1
+</querytext>
+</fullquery>
+
+
+<fullquery name="sp_package_url.get_mount_point">
+<querytext>
+select site_node.url(min(node_id)) as url
+from site_nodes
+where object_id = :package_id
+</querytext>
+</fullquery>
+
 
 </queryset>

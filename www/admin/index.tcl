@@ -34,5 +34,5 @@ if { $n_static_pages == 1 } {
 }
 
 set title "Static Pages Administration"
-
+set fs_root "[acs_root_dir][ad_parameter {fs_root}]"
 set context [list $title]

@@ -18,18 +18,21 @@ ad_page_contract {
 # sp_sync_cr_with_filesystem callbacks to fill file_items with info.
 #
 proc sp_old_item { path id } {
-    upvar file_items file_items
-    ns_write "<br><code>$path</code>: <i>unchanged</i>"
+    ns_write "\n<br><code>$path</code>: <i>unchanged</i>"
 }
 proc sp_new_item { path id } {
-    upvar file_items file_items
-    ns_write "<br><code>$path</code>: <i>added</i>"
+    ns_write "\n<br><code>$path</code>: <i>added</i>"
 }
 proc sp_changed_item { path id } {
-    upvar file_items file_items
-    ns_write "<br><code>$path</code>: <i>updated</i>"
+    ns_write "\n<br><code>$path</code>: <i>updated</i>"
     # The title may have changed:
     sp_flush_page $id
+}
+
+proc sp_error_item { path id msg } {
+   ns_write "\n<br>
+<br><code>$path</code>: <strong>Error:</strong>
+<blockquote>$msg</blockquote>"
 }
 
 set title "Filesystem search"
@@ -41,18 +44,23 @@ ns_write "<html><head><title>$title</title></head><body bgcolor=white>
 <h2>$title</h2>
 $context_bar
 <hr>
-Starting scan<br /><br />
 "
 
-set root_folder_id [sp_root_folder_id [ad_conn package_id]]
+set package_id [ad_conn package_id]
+set root_folder_id [sp_root_folder_id $package_id]
+set fs_root "[acs_root_dir][ad_parameter -package_id $package_id {fs_root}]"
 
-sp_sync_cr_with_filesystem \
+ns_write "
+<p>
+[sp_sync_cr_with_filesystem \
 	-file_unchanged_proc sp_old_item \
 	-file_add_proc sp_new_item \
 	-file_change_proc sp_changed_item \
+        -file_read_error_proc sp_error_item \
 	-folder_add_proc sp_new_item \
 	-folder_unchanged_proc sp_old_item \
-	"[acs_root_dir]/www" $root_folder_id
+	$fs_root $root_folder_id]
+<p>
+"
 
-
-ns_write "<p><strong>Finished updating static pages</strong></body></html>\n"
+ns_write "</body></html>\n"
