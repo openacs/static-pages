@@ -219,7 +219,22 @@ ad_proc -public sp_sync_cr_with_filesystem {
 	}
     }
 
+    # TODO: This is very wrong.  Should NEVER just delete all content! 
+    # Note that the canonical content of the file itself lives in the 
+    # fileystem and can easily be re-imported to the database, but 
+    # this ALSO blindly deletes all user-contributed comments which 
+    # point to the file! 
+    # 
+    # See also: http://openacs.org/bboard/q-and-a-fetch-msg.tcl?msg_id=0002U2 
+    # 
+    # --atp@piskorski.com, 2001/08/13 15:07 EDT 
+ 
     # Clean up any files that are in the db but no longer in the filesystem:
+
+    # TODO: Why are we doing these two deletes after calling
+    # static_page.delete_stale_items?
+    # --atp@piskorski.com, 2001/08/23 02:20 EDT 
+
     set package_id [ad_conn package_id]
     db_exec_plsql delete_old_files {
 	begin
