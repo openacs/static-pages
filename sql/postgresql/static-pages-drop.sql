@@ -21,7 +21,7 @@ declare
         v_root_folder_row sp_folders.folder_id%TYPE;
 begin
 	for v_root_folder_row in (
-		select folder_id from sp_folders where parent_id is null
+		select folder_id from sp_folders where parent_id is null;
 	) loop
 		static_page__delete_folder(v_root_folder_row);
 	end loop;

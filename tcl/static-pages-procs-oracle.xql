@@ -3,9 +3,9 @@
 <queryset>
    <rdbms><type>oracle</type><version>8.1.6</version></rdbms>
 
-<fullquery name="sp_sync_cr_with_filesystem.create_new_folder">      
+<fullquery name="sp_sync_cr_with_filesystem.create_new_folder">
       <querytext>
-      
+
 			    begin
 				    :1 := static_page.new_folder (
 					    name	=> :directory,
@@ -14,25 +14,25 @@
 					    description	=> 'Static pages folder'
 				    );
 			    end;
-			
+
       </querytext>
 </fullquery>
 
- 
-<fullquery name="sp_sync_cr_with_filesystem.update_db_file">      
+
+<fullquery name="sp_sync_cr_with_filesystem.update_db_file">
       <querytext>
-      
+
 			update cr_revisions set content = empty_blob()
 			where revision_id = content_item.get_live_revision(:static_page_id)
 			returning content into :1
-		    
+
       </querytext>
 </fullquery>
 
- 
-<fullquery name="sp_sync_cr_with_filesystem.do_sp_new">      
+
+<fullquery name="sp_sync_cr_with_filesystem.do_sp_new">
       <querytext>
-      
+
 		    begin
 			:1 := static_page.new(
 				  filename => :file,
@@ -40,50 +40,69 @@
 				  folder_id => :parent_folder_id
 			      );
 		    end;
-		
+
       </querytext>
 </fullquery>
 
- 
-<fullquery name="sp_sync_cr_with_filesystem.insert_file_contents">      
+
+<fullquery name="sp_sync_cr_with_filesystem.insert_file_contents">
       <querytext>
-      
+
 		    update cr_revisions set content = empty_blob()
 		    where revision_id = content_item.get_live_revision(:static_page_id)
 		    returning content into :1
-		
+
       </querytext>
 </fullquery>
 
- 
-<fullquery name="sp_sync_cr_with_filesystem.delete_old_files">      
+
+<fullquery name="sp_sync_cr_with_filesystem.delete_old_files">
       <querytext>
-      
+
 	begin
 	    static_page.delete_stale_items(:sync_session_id,:package_id);
 
 	    delete from sp_extant_folders where session_id = :sync_session_id;
 	    delete from sp_extant_files where session_id = :sync_session_id;
 	end;
-    
+
       </querytext>
 </fullquery>
 
- 
-<fullquery name="sp_root_folder_id.get_root_folder_id">      
+
+<fullquery name="sp_root_folder_id.get_root_folder_id">
       <querytext>
-      
+
 	begin
 	    :1 := static_page.get_root_folder(:package_id);
 	end;
-    
+
       </querytext>
 </fullquery>
 
- 
-<fullquery name="sp_change_matching_permissions.grant_or_revoke_matching_permissions">      
+<fullquery name="sp_sync_cr_with_filesystem.get_db_page">
       <querytext>
-      
+
+		    select content as file_from_db from cr_revisions
+		    where revision_id = content_item.get_live_revision(:static_page_id)
+
+      </querytext>
+</fullquery>
+
+
+<fullquery name="sp_sync_cr_with_filesystem.get_folder_id">
+      <querytext>
+
+        select nvl(content_item.get_id(:cumulative_path,:root_folder_id),0)
+        from dual
+
+      </querytext>
+</fullquery>
+
+
+<fullquery name="sp_change_matching_permissions.grant_or_revoke_matching_permissions">
+      <querytext>
+
 	    begin
 	    for file_row in (
 		    select static_page_id from static_pages
@@ -100,9 +119,9 @@
 		    );
 	    end loop;
 	    end;
-    
+
       </querytext>
 </fullquery>
 
- 
+
 </queryset>

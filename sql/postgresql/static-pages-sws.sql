@@ -14,28 +14,24 @@
 --   *  http://www.fsf.org/copyleft/gpl.html
 --   **/
 
-create or replace function sp_cr_revision_in_package_id (
+create function sp_cr_revision_in_package_id (
      integer		-- revision_id    in   cr_revisions.revision_id%TYPE
-) return apm_packages.package_id%TYPE
-as '
+) returns integer as '
 declare
 	p_revision_id alias for $1;	
     v_package_id     apm_packages.package_id%TYPE;
-    v_item_id        cr_items.item_id%TYPE;
+    -- v_item_id        cr_items.item_id%TYPE;
 begin
-
-   select package_id into v_package_id 
+   select package_id into v_package_id
    from sp_folders spf, cr_revisions cr, cr_items ci
    where cr.revision_id = p_revision_id
    and ci.item_id = cr.item_id
    and ci.parent_id = spf.folder_id;
 
+   if not found then
+        return null;
+   end if;
    return v_package_id;
-
-   -- FIX ME OR RETHINK THE WAY IT''S DONE	
-   -- exception 
-   --     when no_data_found then
-   --         return null;
 
 end;' language 'plpgsql';
 
