@@ -42,7 +42,7 @@
 <fullquery name="sp_sync_cr_with_filesystem.update_db_file">      
       <querytext>
 
-		update cr_revisions set content = :file
+		update cr_revisions set content = :sp_filename
 		where revision_id = content_item__get_live_revisions(:static_page_id)
    
       </querytext>
@@ -60,11 +60,10 @@
       </querytext>
 </fullquery>
 
-
 <fullquery name="sp_sync_cr_with_filesystem.insert_file_contents">
       <querytext>
 
-		update cr_revisions set content = :file
+		update cr_revisions set content = :sp_filename
 		where revision_id = content_item__get_live_revisions(:static_page_id)
 
 
