@@ -86,35 +86,62 @@
       </querytext>
 </fullquery>
 
-
-<fullquery name="sp_change_matching_permissions.grant_or_revoke_matching_permissions">
+<fullquery name="sp_change_matching_display.show_or_summarize_comments_matching">
       <querytext>
-FIX ME  provisional thought
-create function inline__0()
-returns integer as '
-        declare
-                v_file_row    static_pages.static_page_id%TYPE;
-        begin
-	    for v_file_row in (
+
+	    update static_pages set show_comments_p = :show_full_comments_p
+                where static_page_id in (
 		    select static_page_id from static_pages
 		    where folder_id in (
-			    select folder_id from sp_folders
-			    start with folder_id = :root_folder_id
-			    connect by parent_id = prior folder_id)
+			select folder_id from sp_folders where
+			 tree_sortkey like ( select tree_sortkey || '%'
+				from sp_folders
+				where folder_id = :root_folder_id)
+							)
 		    and filename like '%${contained_string}%'
-	    ) loop
-		    acs_permission__${grant_or_revoke}_permission(
-			    file_row.static_page_id,                    -- object_id
-			    acs__magic_object_id(''the_public''),       -- grantee_id
-			    ''general_comments_create''                 -- privilege
+	        )
+
+      </querytext>
+</fullquery>
+
+
+<fullquery name="sp_change_matching_permissions.grant_or_revoke_matching_permissions">
+	<querytext>
+	    begin
+
+		for file_row in (
+		    select static_page_id from static_pages
+		    where folder_id in (
+			select folder_id from sp_folders where
+			 tree_sortkey like ( select tree_sortkey || '%'
+				from sp_folders
+				where folder_id = :root_folder_id)
+   				) and
+			filename like '%${contained_string%'}
+		) loop
+
+		    PERFORM acs_permission__${grant_or_revoke}_permission(
+			    file_row.static_page_id,
+			    acs__magic_object_id('the_public'),
+			    'general_comments_create'
 		    );
 	    end loop;
-            return 0;
-end;' language 'plpgsql';
+	    end;
 
-select inline__0();
+	</querytext>
+</fullquery>
 
-drop function inline__0();
+<fullquery name="sp_change_matching_display.matching_static_page">
+      <querytext>
+
+	select static_page_id from static_pages
+	     where folder_id in (
+		     select folder_id from sp_folders
+		     where tree_sortkey like
+			(select tree_sortkey ||'%' from sp_folders
+				where folder_id = :root_folder_id)
+			) and filename like '%${contained_string}%'
+
       </querytext>
 </fullquery>
 

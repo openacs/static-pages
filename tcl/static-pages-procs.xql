@@ -56,21 +56,6 @@
 </fullquery>
 
 
-<fullquery name="sp_change_matching_display.show_or_summarize_comments_matching">
-      <querytext>
-
-	    update static_pages set show_comments_p = :show_full_comments_p
-                where static_page_id in (
-		    select static_page_id from static_pages
-		    where folder_id in (
-			    select folder_id from sp_folders
-			    start with folder_id = :root_folder_id
-			    connect by parent_id = prior folder_id)
-		    and filename like '%${contained_string}%'
-	        )
-
-      </querytext>
-</fullquery>
 
 
 <fullquery name="sp_serve_html_page.get_page_info">

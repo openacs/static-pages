@@ -7,7 +7,7 @@
       <querytext>
 
 	    select static_page__revoke_permission(:item_id,acs__magic_object_id('the_public'),
-	    'general_comments_create', :recurse);
+	    'general_comments_create', :recurse)
     
       </querytext>
 </fullquery>
@@ -17,7 +17,7 @@
       <querytext>
 
 	    select static_page__grant_permission(:item_id,acs__magic_object_id('the_public'),
-		'general_comments_create', :recurse);
+		'general_comments_create', :recurse)
     
       </querytext>
 </fullquery>

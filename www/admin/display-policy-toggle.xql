@@ -3,9 +3,8 @@
 
 <fullquery name="toggle_display_policy">      
       <querytext>
-      FIX ME DECODE (USE SQL92 CASE) 
     update static_pages
-        set show_comments_p = decode(show_comments_p,'t','f','t')
+        set show_comments_p = (CASE WHEN show_comments_p=TRUE THEN FALSE ELSE TRUE END)
         where static_page_id = :item_id
 
       </querytext>

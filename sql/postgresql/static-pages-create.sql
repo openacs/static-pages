@@ -278,7 +278,7 @@ create	function static_page__new (
 		v_revision_id		integer;
 		v_is_live		boolean default ''t'';
 		v_mime_type		cr_revisions.mime_type%TYPE default ''text/html'';
-		v_storage_type		cr_items.storage_type%TYPE default ''text'';
+		v_storage_type		cr_items.storage_type%TYPE default ''file'';
         begin
                 -- Create content item; this also makes the content revision.
                 -- One might be tempted to set the content_type to static_page,
@@ -675,8 +675,8 @@ create	function static_page__grant_permission (
                 p_grantee_id	alias for $2;
                 p_privilege	alias for $3;
                 p_recursive_p	alias for $4;
-		v_file_row	static_pages.static_page_id%TYPE;
-		v_folder_row	sp_folders.folder_id%TYPE;
+		v_file_row	static_pages%ROWTYPE;
+		v_folder_row	sp_folders%ROWTYPE;
         begin
                 if recursive_p = ''t'' then
                         -- For each folder that is a descendant of item_id, grant.
@@ -687,13 +687,13 @@ create	function static_page__grant_permission (
 		where folder_id = p_item_id)
                          loop
                                 perform acs_permission__grant_permission(
-				v_folder_row,		-- object_id 
+				v_folder_row.folder_id,	-- object_id 
 				p_grantee_id,		-- grantee_id
 				p_privilege		-- privilege 
                                 );
                         end loop;
                         -- For each file that is a descendant of item_id, grant.
-                        for file_row in 
+                        for v_file_row in 
                                 select static_page_id from static_pages
                                 where folder_id in (
                                         select folder_id from sp_folders
@@ -702,8 +702,8 @@ create	function static_page__grant_permission (
 		where folder_id = p_item_id)
                                 )
                          loop
-                                acs_permission__grant_permission(
-				v_file_row,		-- object_id 
+                                perform acs_permission__grant_permission(
+				v_file_row.static_page_id,	-- object_id 
 				p_grantee_id,		-- grantee_id
 				p_privilege		-- privilege 
                                 );
@@ -729,8 +729,8 @@ create	function static_page__revoke_permission (
                 p_grantee_id	alias for $2;
                 p_privilege	alias for $3;
                 p_recursive_p	alias for $4;
-		v_file_row	static_pages.static_page_id%TYPE;
-		v_folder_row	sp_folders.folder_id%TYPE;
+		v_file_row	static_pages%ROWTYPE;
+		v_folder_row	sp_folders%ROWTYPE;
         begin
                 if p_recursive_p = ''t'' then
                         -- For each folder that is a descendant of item_id, revoke.
@@ -741,7 +741,7 @@ create	function static_page__revoke_permission (
 		where folder_id = p_item_id)
                          loop
                                 perform acs_permission__revoke_permission(
-				v_folder_row,		-- object_id 
+				v_folder_row.folder_id,	-- object_id 
 				p_grantee_id,		-- grantee_id
 				p_privilege		-- privilege 
                                 );
@@ -757,7 +757,7 @@ create	function static_page__revoke_permission (
                                 )
                          loop
                                 perform acs_permission__revoke_permission(
-				v_file_row,		-- object_id 
+				v_file_row.static_page_id,	-- object_id 
 				p_grantee_id,		-- grantee_id
 				p_privilege		-- privilege 
                                 );
