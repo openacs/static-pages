@@ -3,7 +3,7 @@
 <queryset>
    <rdbms><type>oracle</type><version>8.1.6</version></rdbms>
 
-<fullquery name="sp_sync_cr_with_filesystem.create_new_folder">
+<fullquery name="sp_sync_cr_with_filesystem_internal.create_new_folder">
       <querytext>
 
 			    begin
@@ -19,7 +19,7 @@
 </fullquery>
 
 
-<fullquery name="sp_sync_cr_with_filesystem.update_db_file">
+<fullquery name="sp_sync_cr_with_filesystem_internal.update_db_file">
       <querytext>
 
 			update cr_revisions set content = empty_blob()
@@ -29,7 +29,7 @@
       </querytext>
 </fullquery>
 
-<fullquery name="sp_sync_cr_with_filesystem.check_db_for_page">
+<fullquery name="sp_sync_cr_with_filesystem_internal.check_db_for_page">
       <querytext>
 
 		select static_page_id from static_pages
@@ -38,7 +38,7 @@
       </querytext>
 </fullquery>
 
-<fullquery name="sp_sync_cr_with_filesystem.do_sp_new">
+<fullquery name="sp_sync_cr_with_filesystem_internal.do_sp_new">
       <querytext>
 
 		    begin
@@ -53,7 +53,7 @@
 </fullquery>
 
 
-<fullquery name="sp_sync_cr_with_filesystem.insert_file_contents">
+<fullquery name="sp_sync_cr_with_filesystem_internal.insert_file_contents">
       <querytext>
 
 		    update cr_revisions set content = empty_blob()
@@ -64,7 +64,7 @@
 </fullquery>
 
 
-<fullquery name="sp_sync_cr_with_filesystem.delete_old_files">
+<fullquery name="sp_sync_cr_with_filesystem_internal.delete_old_files">
       <querytext>
 
 	begin
@@ -88,7 +88,7 @@
       </querytext>
 </fullquery>
 
-<fullquery name="sp_sync_cr_with_filesystem.get_db_page">
+<fullquery name="sp_sync_cr_with_filesystem_internal.get_db_page">
       <querytext>
 
 		    select content as file_from_db from cr_revisions
@@ -98,7 +98,7 @@
 </fullquery>
 
 
-<fullquery name="sp_sync_cr_with_filesystem.get_folder_id">
+<fullquery name="sp_sync_cr_with_filesystem_internal.get_folder_id">
       <querytext>
 
         select nvl((select item_id from cr_items where name=:cumulative_path),0)

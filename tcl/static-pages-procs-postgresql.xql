@@ -3,7 +3,7 @@
 <queryset>
    <rdbms><type>postgresql</type><version>7.1</version></rdbms>
 
-<fullquery name="sp_sync_cr_with_filesystem.get_db_page">
+<fullquery name="sp_sync_cr_with_filesystem_internal.get_db_page">
       <querytext>
 
 		    select content as file_from_db from cr_revisions
@@ -13,7 +13,7 @@
 </fullquery>
 
 
-<fullquery name="sp_sync_cr_with_filesystem.get_folder_id">
+<fullquery name="sp_sync_cr_with_filesystem_internal.get_folder_id">
       <querytext>
 
         select coalesce((select item_id from cr_items where name=:cumulative_path),0)
@@ -22,7 +22,7 @@
 </fullquery>
 
 
-<fullquery name="sp_sync_cr_with_filesystem.create_new_folder">
+<fullquery name="sp_sync_cr_with_filesystem_internal.create_new_folder">
       <querytext>
                 select static_page__new_folder (
 			NULL, 			-- folder_id	
@@ -39,7 +39,7 @@
 </fullquery>
 
  
-<fullquery name="sp_sync_cr_with_filesystem.update_db_file">      
+<fullquery name="sp_sync_cr_with_filesystem_internal.update_db_file">      
       <querytext>
 		update cr_revisions set content = :sp_filename
 		where revision_id = content_item__get_live_revisions(:static_page_id)
@@ -47,7 +47,7 @@
       </querytext>
 </fullquery>
 
-<fullquery name="sp_sync_cr_with_filesystem.check_db_for_page">
+<fullquery name="sp_sync_cr_with_filesystem_internal.check_db_for_page">
       <querytext>
 
 		select static_page_id, mtime as mtime_from_db from static_pages
@@ -56,7 +56,7 @@
       </querytext>
 </fullquery>
 
-<fullquery name="sp_sync_cr_with_filesystem.do_sp_new">      
+<fullquery name="sp_sync_cr_with_filesystem_internal.do_sp_new">      
       <querytext>
                 select static_page__new(
                         :parent_folder_id,       -- folder_id
@@ -68,7 +68,7 @@
       </querytext>
 </fullquery>
 
-<fullquery name="sp_sync_cr_with_filesystem.insert_file_contents">
+<fullquery name="sp_sync_cr_with_filesystem_internal.insert_file_contents">
       <querytext>
 
 		update cr_revisions set content = :sp_filename
@@ -79,7 +79,7 @@
 </fullquery>
 
 
-<fullquery name="sp_sync_cr_with_filesystem.delete_old_files">
+<fullquery name="sp_sync_cr_with_filesystem_internal.delete_old_files">
       <querytext>
 	begin
 	perform static_page__delete_stale_items(:sync_session_id,:package_id);

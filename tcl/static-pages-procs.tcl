@@ -7,20 +7,21 @@ ad_library {
     @cvs-id $Id$
 }
 
-ad_proc -public sp_sync_cr_with_filesystem { 
+
+ad_proc -public sp_sync_cr_with_filesystem {
     {
-	-file_add_proc ""
-	-file_change_proc ""
-	-file_unchanged_proc ""
+        -file_add_proc ""
+        -file_change_proc ""
+        -file_unchanged_proc ""
         -file_read_error_proc ""
-	-folder_add_proc ""
-	-folder_unchanged_proc ""
-        -stack_depth 1
+        -folder_add_proc ""
+        -folder_unchanged_proc ""
+        -package_id ""
     }
     fs_root
     root_folder_id
     {
- 	static_page_regexp {}	
+       static_page_regexp {}
     }
 } {
     Synchronize the content repository with the file system.
@@ -44,7 +45,7 @@ ad_proc -public sp_sync_cr_with_filesystem {
     @param folder_unchanged_proc The name of a Tcl proc to be called for each folder
                                  unchanged in the database.
 
-    @param fs_root The starting path in the filesystem. This is relative to the openacs install directory,  Files below this point will 
+    @param fs_root The starting path in the filesystem.  Files below this point will 
                    be scanned.
 
     @param root_folder_id The id of the root folder in the static-pages system (and in 
@@ -53,17 +54,174 @@ ad_proc -public sp_sync_cr_with_filesystem {
 
     @param static_page_regexp A regexp to identify static pages.
 
-    @author Brandoch Calef (bcalef@arsdigita.com)
-    @creation-date 2001-02-07
+    @param package_id Optionally, the package id of the Static Pages
+    instance.  If not specified, determined from ad_conn.
+
+    @author Andrew Piskorski (atp@piskorski.com)
+    @creation-date 2001/08/27
 } {
-    set proc_name {sp_sync_cr_with_filesystem}
+   if { [empty_string_p $package_id] } {
+      set package_id [ad_conn package_id]
+   }
+
+   if { [catch { set return_val [sp_sync_cr_with_filesystem_internal \
+           -file_add_proc          $file_add_proc         \
+           -file_change_proc       $file_change_proc      \
+           -file_unchanged_proc    $file_unchanged_proc   \
+           -file_read_error_proc   $file_read_error_proc  \
+           -folder_add_proc        $folder_add_proc       \
+           -folder_unchanged_proc  $folder_unchanged_proc \
+           -package_id             $package_id            \
+           -stack_depth  2 \
+           {return_mesg}  $fs_root  $root_folder_id  $static_page_regexp ]
+   } result] } {
+      # We caught an unexpected error, so clean up the mutex, and then
+      # re-throw the exact same error:
+
+      sp_sync_cr_with_filesystem_unlock $package_id
+
+      global errorInfo
+      error $result $errorInfo
+   } else {
+      return $return_mesg
+   }
+}
+
+
+ad_proc -private sp_sync_cr_with_filesystem_unlock {package_id} {
+   Unlocks the sp_sync_cr_with_filesystem_times variable - use upon
+   abnormal termination of the sp_sync_cr_with_filesystem_internal
+   stuff.  We have it as a separate proc here to make it convenient to
+   call from within multiple different procedures.
+
+   @author Andrew Piskorski (atp@piskorski.com)
+   @creation-date 2001/08/27
+} {
+   ns_share sp_sync_cr_with_filesystem_times
+   ns_share sp_sync_cr_with_filesystem_mutex
+
+   ns_mutex lock $sp_sync_cr_with_filesystem_mutex
+   set sp_sync_cr_with_filesystem_times($package_id) {}
+   ns_mutex unlock $sp_sync_cr_with_filesystem_mutex
+}
+
+
+ad_proc -private sp_sync_cr_with_filesystem_internal { 
+    {
+        -file_add_proc ""
+        -file_change_proc ""
+        -file_unchanged_proc ""
+        -file_read_error_proc ""
+        -folder_add_proc ""
+        -folder_unchanged_proc ""
+        -package_id ""
+        -stack_depth 1
+    }
+    return_mesg_var
+    fs_root
+    root_folder_id
+    {
+       static_page_regexp {}
+    }
+} {
+   This procedure was originally named sp_sync_cr_with_filesystem
+   procedure, but has been renamed and modified so that it can be
+   wrapped inside the new sp_sync_cr_with_filesystem, to support the
+   mutex locking.
+   <p>
+   We wrap it because at the end of this proc, we must set
+   sp_sync_cr_with_filesystem_times($package_id) back to empty string.
+   But if we hit some random untrapped error partway through, we'll
+   never get there.  Therefore, we wrap this proc inside another, and
+   have the wrapper proc catch any errors thrown by this proc, set the
+   var back to empty string, then re-throw the error.
+   <p>
+   This procedure takes the exact same arguments as its
+   sp_sync_cr_with_filesystem wrapper proc, except for the addition of
+   return_mesg_var.
+   <p>
+   You should <em>never</em> call this procedure, except from
+   sp_sync_cr_with_filesystem.
+
+   @param return_mesg_var Name of variable in which to return text
+   message, for presentation on a web page to the user.
+
+   @param package_id <em>Must</em> be passed in, for this internal
+   version of the proc.
+
+   @author Brandoch Calef (bcalef@arsdigita.com)
+   @author Andrew Piskorski (atp@piskorski.com)
+   @creation-date 2001-02-07
+} {
+    set proc_name {sp_sync_cr_with_filesystem_internal}
+
+    if { [empty_string_p $package_id] } {
+        error "package_id '$package_id' is not valid."
+    }
+    upvar $return_mesg_var return_mesg
+    set return_mesg {}
+
+
+    # Make sure that only 1 copy of this proc per package instance
+    # ever runs at once:
+
+    ns_share sp_sync_cr_with_filesystem_times
+    ns_share sp_sync_cr_with_filesystem_mutex
+
+    # TODO: Currently, the 2nd instance of this proc will block until
+    # the first finishes, rather than immediately returning the
+    # return_mesg below and quitting.  Fix this.  --atp@piskorski.com,
+    # 2002/12/11 20:06 EST
+
+    ns_mutex lock $sp_sync_cr_with_filesystem_mutex
+    if { -1 == [lsearch [array names sp_sync_cr_with_filesystem_times] $package_id] } {
+       # The package_id isn't in the array yet at all, so another copy
+       # is not running.
+       set sp_sync_cr_with_filesystem_times($package_id) [ns_time]
+    } elseif { [empty_string_p $sp_sync_cr_with_filesystem_times($package_id)] } {
+       # We're ok, no other copy is running.
+       set sp_sync_cr_with_filesystem_times($package_id) [ns_time]
+    } else {
+       # Another copy is running.
+       set other_start_time $sp_sync_cr_with_filesystem_times($package_id)
+       ns_mutex unlock $sp_sync_cr_with_filesystem_mutex
+
+       set other_time_pretty [ns_httptime $other_start_time]
+       set time_diff [expr [ns_time] -  $other_start_time]
+
+       set mesg "sp_sync_cr_with_filesystem: Already running. sp_sync_cr_with_filesystem_times($package_id) == $other_time_pretty, $time_diff seconds ago."
+       ns_log Warning $mesg
+
+       set return_mesg "Another copy of this procedure is already running for
+       this package instance.  It started running $time_diff seconds
+       ago, at $other_time_pretty.  Only one copy may run at a time.
+       Please wait and then try again."
+
+       return 0
+
+       # Instead of [ns_httptime [ns_time]], could also use [clock format [clock seconds]].
+    }
+    ns_mutex unlock $sp_sync_cr_with_filesystem_mutex
+
+    # Up to here in this proc had better be error free - if not, our
+    # whole mutex and error catching scheme will probably crash and
+    # burn!  --atp@piskorski.com, 2001/08/27 18:37 EDT
+
 
     set sync_session_id [db_nextval sp_session_id_seq]
 
     set fs_trimmed [string trimright $fs_root "/"]
     set fs_trimmed_length [string length $fs_trimmed]
 
-    set static_page_regexp "\\.[join [split [string trim [ad_parameter -package_id [nsv_get static_pages package_id] AllowedExtensions]] " "] "$|\\."]$"
+    set static_page_regexp "\\.[join [split [string trim [ad_parameter -package_id $package_id AllowedExtensions]] " "] "$|\\."]$"
+
+    # TODO: What happens if at some point, an Admin CHANGES the
+    # fs_root parameter for a Static Pages package instance?  BAD
+    # THINGS, I suspect.  We're probably invisibly orphaning content
+    # inside the Content Repository.  Look into this.  For now, simply
+    # DO NOT change the fs_root of an already in use Static Pages
+    # package instance.
+    # --atp@piskorski.com, 2002/09/15 10:03 EDT
 
     foreach file [ad_find_all_files $fs_root] {
 	if { [regexp -nocase $static_page_regexp $file match] } {
@@ -76,6 +234,7 @@ ad_proc -public sp_sync_cr_with_filesystem {
 	    set parent_folder_id $root_folder_id
 	    foreach directory $path {
 		append cumulative_path "$directory/"
+                ns_log Notice "atp:cumulative_path: '$cumulative_path', root_folder_id: '$root_folder_id'"
 		if (![info exists path_exists($cumulative_path)]) {
 		    # check db
 		    set folder_id [db_string get_folder_id {
@@ -86,11 +245,11 @@ ad_proc -public sp_sync_cr_with_filesystem {
 		    if { $folder_id == 0} {
 			set folder_id [db_exec_plsql create_new_folder {}]
 			if { [string length $folder_add_proc] > 0 } {
-			    uplevel "$folder_add_proc $cumulative_path $folder_id"
+			    uplevel $stack_depth "$folder_add_proc $cumulative_path $folder_id"
 			}
 		    } else {
 			if { [string length $folder_unchanged_proc] > 0 } {
-			    uplevel "$folder_unchanged_proc $cumulative_path $folder_id"
+			    uplevel $stack_depth "$folder_unchanged_proc $cumulative_path $folder_id"
 			}
 		    }
 		    set path_exists($cumulative_path) $folder_id
@@ -98,6 +257,7 @@ ad_proc -public sp_sync_cr_with_filesystem {
 			insert into sp_extant_folders (session_id,folder_id)
 			values (:sync_session_id,:folder_id)
 		    }
+
 		} else {
 		    set folder_id $path_exists($cumulative_path)
 		}
@@ -120,6 +280,7 @@ ad_proc -public sp_sync_cr_with_filesystem {
 		select static_page_id, mtime as mtime_from_db from static_pages
 		where filename = :sp_filename
 	    }] {
+
 	       if { [catch {
 		    set fp [open $file r]
 		    set file_from_fs [read $fp]
@@ -135,7 +296,7 @@ ad_proc -public sp_sync_cr_with_filesystem {
                     ns_log Error $mesg
                     if { ![empty_string_p $file_read_error_proc] } {
                         ns_log Notice "$proc_name: about to run file_read_error_proc:"
-                        uplevel 1 [list $file_read_error_proc $file $static_page_id $mesg]
+                        uplevel $stack_depth [list $file_read_error_proc $file $static_page_id $mesg]
                     }
                     continue
 		}
@@ -176,11 +337,11 @@ ad_proc -public sp_sync_cr_with_filesystem {
 			}
 		    }
 			if { [string length $file_change_proc] > 0 } {
-			    uplevel "$file_change_proc $file $static_page_id"
+			    uplevel $stack_depth "$file_change_proc $file $static_page_id"
 			}
 		} else {
 		    if { [string length $file_unchanged_proc] > 0 } {
-			uplevel "$file_unchanged_proc $file $static_page_id"
+			uplevel $stack_depth "$file_unchanged_proc $file $static_page_id"
 		    }
 		}
 		db_dml insert_file {
@@ -206,7 +367,7 @@ ad_proc -public sp_sync_cr_with_filesystem {
                     ns_log Error $mesg
                     if { ![empty_string_p $file_read_error_proc] } {
                         ns_log Notice "$proc_name: about to run file_read_error_proc:"
-                        uplevel 1 [list $file_read_error_proc $file $static_page_id $mesg]
+                        uplevel $stack_depth [list $file_read_error_proc $file $static_page_id $mesg]
                     }
                     continue
 		}
@@ -223,6 +384,13 @@ ad_proc -public sp_sync_cr_with_filesystem {
 		# seperately.  This is simple (get item_id from static_page.new(),
 		# then update cr_revisions to insert the blob) but involved direct
 		# manipulation of the cr_revisions table.
+
+                # If you run two copies of sp_sync_cr_with_filesystem
+                # at once, you CAN get "ORA-00001: unique constraint
+                # (CR_ITEMS_UNIQUE_NAME) violated" errors here when
+                # calling static_page.new - thus the addition of mutex
+                # locking.  --atp@piskorski.com, 2001/08/27 01:20 EDT
+
 		set static_page_id [db_exec_plsql do_sp_new {
 		    begin
 			:1 := static_page.new(
@@ -239,7 +407,7 @@ ad_proc -public sp_sync_cr_with_filesystem {
 		    returning content into :1
 		} -blob_files [list $file]
 		if { [string length $file_add_proc] > 0 } {
-		    uplevel "$file_add_proc $file $static_page_id"
+		    uplevel $stack_depth "$file_add_proc $file $static_page_id"
 		}
 		db_dml insert_file {
 		    insert into sp_extant_files (session_id,static_page_id)
@@ -265,7 +433,6 @@ ad_proc -public sp_sync_cr_with_filesystem {
     # static_page.delete_stale_items?
     # --atp@piskorski.com, 2001/08/23 02:20 EDT 
 
-    set package_id [ad_conn package_id]
     db_exec_plsql delete_old_files {
 	begin
 	    static_page.delete_stale_items(:sync_session_id,:package_id);
@@ -274,7 +441,12 @@ ad_proc -public sp_sync_cr_with_filesystem {
 	    delete from sp_extant_files where session_id = :sync_session_id;
 	end;
     }
+
+    sp_sync_cr_with_filesystem_unlock $package_id
+    set return_mesg "Done."
+    return 0
 }
+
 
 ad_proc -public sp_root_folder_id { package_id } {
     Returns the id of the root folder associated with package_id,
