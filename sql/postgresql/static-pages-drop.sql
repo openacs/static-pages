@@ -18,12 +18,12 @@
 create function inline__0()
 returns integer as '
 declare
-        v_root_folder_row sp_folders.folder_id%TYPE;
+        v_root_folder_row RECORD;
 begin
 	for v_root_folder_row in 
 		select folder_id from sp_folders where parent_id is null
 	 loop
-		static_page__delete_folder(v_root_folder_row);
+		perform static_page__delete_folder(v_root_folder_row.folder_id);
 	end loop;
         return 0;
 end;' language 'plpgsql';
@@ -33,8 +33,6 @@ select inline__0();
 drop function inline__0();
 
 
--- FIXME this won't work until content_type__drop_attribute in 
--- acs-content-repository/sql/postgresql/content-type.sql is fixed DaveB
 
 -- Delete content type 'static_page' and its attributes.
 
@@ -48,7 +46,9 @@ select content_type__drop_type (
 
 select drop_package('static_page');
 
-drop sequence sp_session_id_seq;
+drop view sp_session_id_seq;
+drop sequence sp_session_id_sequence;
+
 drop table sp_extant_files;
 drop table sp_extant_folders;
 
@@ -57,4 +57,11 @@ drop table static_pages;
 
 drop index sp_folders_parent_id_idx;
 drop index sp_folders_package_id_idx;
+
+drop trigger sp_folders_insert_tr on sp_folders;
+drop trigger sp_folders_update_tr on sp_folders;
+drop function sp_folders_insert_tr();
+drop function sp_folders_update_tr();
 drop table sp_folders;
+
+

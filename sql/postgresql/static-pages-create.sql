@@ -135,6 +135,11 @@ begin
         return new;
 
 end;' language 'plpgsql';
+
+create trigger sp_folders_update_tr before update 
+on sp_folders for each row 
+execute procedure sp_folders_update_tr ();
+
 -- end of tree_sortkey triggers DaveB
 
 
@@ -229,7 +234,7 @@ create view sp_session_id_seq as select nextval('sp_session_id_sequence') as nex
 -- this also creates the acs_object type
         select content_type__create_type (
 		'static_page',		-- content_type 
-		null,			-- supertype    
+		'content_revision',	-- supertype    
 		'Static Page',		-- pretty_name  
 		'Static Pages',		-- pretty_plural
 		'static_pages',		-- table_name   
