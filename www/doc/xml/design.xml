@@ -1,0 +1,203 @@
+<sect1 id="static-pages-design" xreflabel="Static Pages Design Document">
+  <title>Static Pages Design Document</title>
+  
+  <authorblurb>
+    <para>By <ulink url="mailto:bcalef@arsdigita.com">Brandoch Calef</ulink></para>
+  </authorblurb>
+
+  <sect2 id="static-pages-design-essentials">
+    <title>Essentials</title>
+
+    <itemizedlist>
+      <listitem><para><ulink url="/api-doc/procs-file-view?path=packages/static-pages/tcl/static-pages-procs.tcl">static-pages-procs.tcl</ulink></para></listitem>
+      <listitem><para><ulink url="/api-doc/plsql-subprogram-one?type=PACKAGE&amp;name=STATIC%5fPAGE">static-page package</ulink></para></listitem>
+
+      <listitem><para>Data model:
+	  <itemizedlist>
+	    <listitem><para><ulink url="/doc/sql/display-sql?url=static-pages-create.sql&amp;package_key=static-pages">static-pages-create.sql</ulink></para></listitem>
+	    <listitem><para><ulink url="/doc/sql/display-sql?url=static-pages-drop.sql&amp;package_key=static-pages">static-pages-drop.sql</ulink></para></listitem>
+	  </itemizedlist>
+	</para>
+      </listitem>
+      
+      <listitem>
+	<para><xref linkend="static-pages-requirements"></xref></para>
+      </listitem>
+    </itemizedlist>
+  </sect2>
+
+  <sect2 id="static-pages-design-introduction">
+    <title>Introduction</title>
+    <para>
+      This is the design document for the Static Pages package, which 
+      <itemizedlist><listitem><para>allows users to make comments on a web 
+	    site's static pages, and</para></listitem>
+	<listitem><para>loads the pages into the content repository so they 
+	    are available to other packages.</para></listitem>
+      </itemizedlist>
+      The functions are described in detail in the requirements document.
+    </para>
+
+    <para>
+      Although this package enables commenting and searching, those services are actually
+      performed by the General Comments and Site-wide Search packages, respectively.
+    </para>
+
+  </sect2>
+
+  <sect2 id="static-pages-design-historical-consid">
+    <title>Historical Considerations</title>
+    
+    <para>
+      The ACS 3.x version of Static Pages implemented a number of features
+      (such as clickstream analysis and broken link searching) which, in the
+      interest of modularity, have been excluded from this version of the 
+      package.
+    </para>
+  </sect2>
+
+  <sect2 id="static-pages-design-api">
+    <title>API</title>
+
+    <para>
+      The two primary functions offered by the Tcl API for Static Pages 
+      are 
+      <itemizedlist><listitem><para>
+	    <computeroutput>sp_sync_cr_with_filesystem</computeroutput>, which
+	    synchronized the content repository with the filesystem, adding,
+	    updating, and deleting content repository entries as necessary;
+	    and
+	  </para></listitem>
+	<listitem><para><computeroutput>sp_serve_html_page</computeroutput>,
+	    which is registered with the request processor to serve static
+	    pages.  Before serving a page, it checks to see if the user
+	    should be offered the opportunity to make comments on it, and
+	    creates the appropriate link if necessary.
+	  </para></listitem>
+      </itemizedlist>
+      The <computeroutput>sp_sync_cr_with_filesystem</computeroutput> proc
+      is fairly general, taking a starting path in the filesystem, a
+      root folder id in the content repository (corresponding to the starting
+      path), and a regexp to identify what files should be considered.
+    </para>
+
+    <para>
+      The PL/SQL API is contained in the 
+      <computeroutput>static_page</computeroutput> package, which contains
+      functions for creating and manipulating static pages.
+    </para>
+	    
+  </sect2>
+
+  <sect2 id="static-pages-design-data-model">
+    <title>Data Model Discussion</title>
+
+    <para>
+      The Static Pages data model is simple: file contents are stored in BLOBs
+      in the content repository, and two tables,
+      <computeroutput>static_pages</computeroutput> and 
+      <computeroutput>sp_folders</computeroutput>, describe the basic
+      file hierarchy (since this information is not easily extracted from the
+      content repository API).  A <computeroutput>package_id</computeroutput>
+      is stored along with each entry in 
+      <computeroutput>sp_folders</computeroutput> so that an instance of 
+      Static Pages is able to distinguish its root folder from the root
+      folders of other services that may be using Static Pages to mirror
+      the filesystem in the content repository.
+    </para>
+
+  </sect2>
+
+  <sect2 id="static-pages-design-ui">
+    <title>User Interface</title>
+
+
+    <para>
+      There are two main user interface pages:
+      <filename>www/admin/fs-scan</filename>
+      (or <filename>www/admin/fs-scan-progress</filename>) and
+      <filename>www/admin/commentability</filename>.
+      <filename>www/admin/fs-scan</filename> simply performs
+      <computeroutput>sp_sync_cr_with_filesystem</computeroutput> and
+      reports the results.  <filename>www/admin/commentability</filename>
+      allows the administrator to change the commentability settings (by means
+      of <computeroutput>static_page.grant_permission</computeroutput> and
+      other functions in the PL/SQL API).
+    </para>
+
+  </sect2>
+
+  <sect2 id="static-pages-design-future">
+    <title>Future Improvements/Areas of Likely Change</title>
+
+
+    <para>
+      There are a few useful features that will likely be added in later
+      releases.
+      <itemizedlist>
+	<listitem><para>
+	    When a file is moved, the file sync procedure will think that
+	    one file has been deleted and another created.  Therefore any
+	    comments made on the file before moving it are lost.  One 
+	    possible solution (proposed by 
+	    <ulink url="mailto:teeters@arsdigita.com">Jeff Teeters</ulink>)
+	    would be to add an HTML comment (containing the page id) to each 
+	    file when it is first loaded into the system.  The file could be 
+	    identified in subsequent scans by the presence of the comment.
+	    However, modifying the static pages in the filesystem may raise 
+	    other problems.
+	    </para></listitem>
+	<listitem><para>
+	    There is not presently any way to exclude pages from the 
+	    site-wide search.
+	  </para></listitem>
+      </itemizedlist>
+    </para>
+
+  </sect2>
+
+  <sect2 id="static-pages-design-authors">
+    <title>Authors</title>
+    <itemizedlist>
+      <listitem><para>System creator: Brandoch Calef</para></listitem>
+      <listitem><para>System owner: Brandoch Calef</para></listitem>
+      <listitem><para>Documentation author: Brandoch Calef</para></listitem>
+    </itemizedlist>
+  </sect2>
+
+  <sect2 id="static-pages-design-revision-history">
+    <title>Revision History</title>
+
+    
+    <informaltable>
+      <tgroup cols="4">
+	<thead>
+	  <row>
+	    <entry>Document Revision #</entry>
+	    <entry>Action Taken, Notes</entry>
+	    <entry>When?</entry>
+	    <entry>By Whom?</entry>
+	  </row>
+	</thead>
+
+	<tbody>
+	  <row>
+	    <entry>0.1</entry>
+	    <entry>Creation</entry>
+	    <entry>2001/03/05</entry>
+	    <entry>Brandoch Calef</entry>
+	  </row>
+
+	</tbody></tgroup></informaltable>
+
+    <para><phrase role="cvstag">($Id$)</phrase></para>
+
+  </sect2>
+
+</sect1>
+ 
+<!--
+ Local Variables:
+ sgml-parent-document: ("index.xml" "chapter" "sect1")
+ End:
+-->

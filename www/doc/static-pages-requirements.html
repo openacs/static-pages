@@ -1,0 +1,659 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML
+><HEAD
+><TITLE
+>Static Pages Requirements</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="aD Hack of: Modular DocBook HTML Stylesheet Version 1.60"><LINK
+REL="HOME"
+TITLE="Static Pages"
+HREF="index.html"><LINK
+REL="UP"
+TITLE="Developer's guide"
+HREF="dev-guide.html"><LINK
+REL="PREVIOUS"
+TITLE="Developer's guide"
+HREF="dev-guide.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="ad-doc.css"></HEAD
+><BODY
+CLASS="sect1"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Static Pages</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="dev-guide.html"
+>Prev</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+>Chapter 2. Developer's guide</TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+>&nbsp;</TD
+></TR
+></TABLE
+><HR
+SIZE="1"
+NOSHADE="NOSHADE"
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="sect1"
+><H1
+CLASS="sect1"
+><A
+NAME="static-pages-requirements"
+>2.2. Static Pages Requirements</A
+></H1
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Table of Contents</B
+></DT
+><DT
+>2.2.1. <A
+HREF="static-pages-requirements.html#static-pages-requirements-introduction"
+>Introduction</A
+></DT
+><DT
+>2.2.2. <A
+HREF="static-pages-requirements.html#static-pages-requirements-system-app-overview"
+>System/Application Overview</A
+></DT
+><DT
+>2.2.3. <A
+HREF="static-pages-requirements.html#static-pages-requirements-cases"
+>Use-cases and User-scenarios</A
+></DT
+><DT
+>2.2.4. <A
+HREF="static-pages-requirements.html#static-pages-requirements-links"
+>Related Links</A
+></DT
+><DT
+>2.2.5. <A
+HREF="static-pages-requirements.html#static-pages-requirements-requirements"
+>Requirements</A
+></DT
+><DD
+><DL
+><DT
+>2.2.5.1. <A
+HREF="static-pages-requirements.html#req-db-sync"
+>Admin UI: DB sync</A
+></DT
+><DT
+>2.2.5.2. <A
+HREF="static-pages-requirements.html#req-admin-ui"
+>Admin UI: commentability designation</A
+></DT
+><DT
+>2.2.5.3. <A
+HREF="static-pages-requirements.html#req-mass-exclusion"
+>Admin UI: index exclusion by pattern</A
+></DT
+><DT
+>2.2.5.4. <A
+HREF="static-pages-requirements.html#req-mass-designation"
+>Admin UI: commentability designation by pattern [deferred]</A
+></DT
+><DT
+>2.2.5.5. <A
+HREF="static-pages-requirements.html#req-report"
+>Admin UI: static pages report</A
+></DT
+><DT
+>2.2.5.6. <A
+HREF="static-pages-requirements.html#req-ui-pages"
+>Public UI: commentable pages</A
+></DT
+><DT
+>2.2.5.7. <A
+HREF="static-pages-requirements.html#req-search"
+>Support for site-wide search</A
+></DT
+><DT
+>2.2.5.8. <A
+HREF="static-pages-requirements.html#old-reqs"
+>Non-requirements: ACS 3.x Static features</A
+></DT
+></DL
+></DD
+><DT
+>2.2.6. <A
+HREF="static-pages-requirements.html#static-pages-requirements-implementation"
+>Implementation Notes</A
+></DT
+><DT
+>2.2.7. <A
+HREF="static-pages-requirements.html#static-pages-revision-history"
+>Revision History</A
+></DT
+></DL
+></DIV
+><DIV
+CLASS="authorblurb"
+><A
+NAME="AEN173"
+></A
+><P
+>By <A
+HREF="mailto:bcalef@arsdigita.com"
+TARGET="_top"
+>Brandoch Calef</A
+></P
+></DIV
+><DIV
+CLASS="sect2"
+><H2
+CLASS="sect2"
+><A
+NAME="static-pages-requirements-introduction"
+>2.2.1. Introduction</A
+></H2
+><P
+>&#13;      This is the requirements document for the Static Pages package.
+    </P
+><P
+>&#13;      The Static Pages package searches the file system for static pages and
+      loads them into the database.  Because all pages are stored in the 
+      database, their contents are available to <TT
+CLASS="computeroutput"
+>site-wide-search</TT
+> and other 
+      packages.  The system also accepts and displays user-contributed comments
+      on static pages. Site administrators may easily manage these functions 
+      (to disallow comments on certain pages, for example) via the admin pages.
+    </P
+></DIV
+><DIV
+CLASS="sect2"
+><H2
+CLASS="sect2"
+><A
+NAME="static-pages-requirements-system-app-overview"
+>2.2.2. System/Application Overview</A
+></H2
+><P
+>&#13;      The Static Pages package stores every static page on the site in the
+      content repository so that they will be available to <TT
+CLASS="computeroutput"
+>site-wide-search</TT
+>
+      and other packages.
+      When a commentable static page is requested, the <TT
+CLASS="computeroutput"
+>general-comments</TT
+>
+      package is used to attach to it a list of existing comments
+      and an "add a comment" link.
+      In this way, the problems of storing and searching content and 
+      managing comments are passed on to other packages.
+    </P
+></DIV
+><DIV
+CLASS="sect2"
+><H2
+CLASS="sect2"
+><A
+NAME="static-pages-requirements-cases"
+>2.2.3. Use-cases and User-scenarios</A
+></H2
+><UL
+><LI
+><P
+CLASS="listitem"
+>an administrator wants to know which static pages
+	  contain the word "pomegranate" (without using 
+	  <TT
+CLASS="filename"
+>grep</TT
+>)</P
+></LI
+><LI
+><P
+CLASS="listitem"
+>an administrator wants to allow users to make comments
+	  on some pages but not on others</P
+></LI
+><LI
+><P
+CLASS="listitem"
+>a user visiting the 
+	  <TT
+CLASS="filename"
+>ca-pomegranates.html</TT
+> page wants to register his
+	  opinion about coastal vs. foothill pomegranates.</P
+></LI
+></UL
+></DIV
+><DIV
+CLASS="sect2"
+><H2
+CLASS="sect2"
+><A
+NAME="static-pages-requirements-links"
+>2.2.4. Related Links</A
+></H2
+><UL
+><LI
+><P
+CLASS="listitem"
+><A
+HREF="dev-guide.html#static-pages-design"
+>Static Pages Design Document</A
+></P
+></LI
+></UL
+></DIV
+><DIV
+CLASS="sect2"
+><H2
+CLASS="sect2"
+><A
+NAME="static-pages-requirements-requirements"
+>2.2.5. Requirements</A
+></H2
+><DIV
+CLASS="sect3"
+><H3
+CLASS="sect3"
+><A
+NAME="req-db-sync"
+>2.2.5.1. Admin UI: DB sync</A
+></H3
+><P
+>&#13;	The administrator's UI will include a command to synchronize the
+	database contents with the static files in the filesystem.
+      </P
+></DIV
+><DIV
+CLASS="sect3"
+><H3
+CLASS="sect3"
+><A
+NAME="req-admin-ui"
+>2.2.5.2. Admin UI: commentability designation</A
+></H3
+><P
+>&#13;	For any given static page, the administator will be able to 
+	specify the following:
+	<OL
+TYPE="1"
+><LI
+><P
+CLASS="listitem"
+>Whether comments may be made on the page</P
+></LI
+><LI
+><P
+CLASS="listitem"
+>Whether comments are shown on the page</P
+></LI
+><LI
+><P
+CLASS="listitem"
+>Whether the page is included in a site-wide search 
+	      [deferred]</P
+></LI
+></OL
+>
+      </P
+></DIV
+><DIV
+CLASS="sect3"
+><H3
+CLASS="sect3"
+><A
+NAME="req-mass-exclusion"
+>2.2.5.3. Admin UI: index exclusion by pattern</A
+></H3
+><P
+>&#13;	An administrator will be able to exclude from the site-wide index
+	any static pages whose URL or title match a pattern.
+      </P
+></DIV
+><DIV
+CLASS="sect3"
+><H3
+CLASS="sect3"
+><A
+NAME="req-mass-designation"
+>2.2.5.4. Admin UI: commentability designation by pattern [deferred]</A
+></H3
+><P
+>&#13;	An administrator will be able to the commentability status of
+	any static pages whose URL or title match a pattern.
+      </P
+></DIV
+><DIV
+CLASS="sect3"
+><H3
+CLASS="sect3"
+><A
+NAME="req-report"
+>2.2.5.5. Admin UI: static pages report</A
+></H3
+><P
+>&#13;	An administrator will be able to view a report summarizing
+	the number, age, etc. of comments made on each static page.
+	[This requires support from general-comments.  A feature request has
+	been put in.]
+      </P
+></DIV
+><DIV
+CLASS="sect3"
+><H3
+CLASS="sect3"
+><A
+NAME="req-ui-pages"
+>2.2.5.6. Public UI: commentable pages</A
+></H3
+><P
+>&#13;	When a user visits a static page on which comments are permitted,
+	the existing comments will be displayed (if the administrator has 
+	designated that they should be) along with a link to add a new comment.
+      </P
+></DIV
+><DIV
+CLASS="sect3"
+><H3
+CLASS="sect3"
+><A
+NAME="req-search"
+>2.2.5.7. Support for site-wide search</A
+></H3
+><P
+>&#13;	The contents of static pages will be made available to the 
+	<TT
+CLASS="computeroutput"
+>site-wide-search</TT
+> package.
+      </P
+></DIV
+><DIV
+CLASS="sect3"
+><H3
+CLASS="sect3"
+><A
+NAME="old-reqs"
+>2.2.5.8. Non-requirements: ACS 3.x Static features</A
+></H3
+><P
+>&#13;	The ACS 3.x version of Static Pages would log each hit to a static
+	page so that it could produce a report showing who hit each page and
+	which pages a particular user visited.  These functions belong in a 
+	"clickstream" package that tracks statistics for all pages, not just 
+	static ones.
+      </P
+><P
+>&#13;	ACS 3.x Static Pages also included a spider to visit each static
+	page and check for bad links.  Again, this feature is not specific
+	to static pages, and is better addressed with a more general tool.
+      </P
+></DIV
+></DIV
+><DIV
+CLASS="sect2"
+><H2
+CLASS="sect2"
+><A
+NAME="static-pages-requirements-implementation"
+>2.2.6. Implementation Notes</A
+></H2
+><P
+>&#13;      <A
+HREF="static-pages-requirements.html#req-ui-pages"
+>Section 2.2.5.6</A
+>:  implement by using
+      <TT
+CLASS="computeroutput"
+>rp_register_extension_handler</TT
+> to register a proc for *.html files.
+      The registered proc will check if the page is commentable, and if so 
+      make the necessary calls to <TT
+CLASS="computeroutput"
+>general-comments</TT
+>.  The "is this page
+      commentable?" query will be cached with util_memoize.
+    </P
+><P
+>&#13;      <A
+HREF="static-pages-requirements.html#req-search"
+>Section 2.2.5.7</A
+>: <TT
+CLASS="computeroutput"
+>site-wide-search</TT
+> can search
+      anything in the content repository, so that's where the pages 
+      should be stored.
+    </P
+><P
+><A
+HREF="static-pages-requirements.html#req-mass-exclusion"
+>Section 2.2.5.3</A
+>:  implement
+      using CR folders to allow admins to exclude entire directories.</P
+><P
+>Designate commentability using the 
+      <TT
+CLASS="computeroutput"
+>general_comments_create</TT
+> privilege
+      defined by the <TT
+CLASS="computeroutput"
+>general-comments</TT
+>
+      package.
+    </P
+></DIV
+><DIV
+CLASS="sect2"
+><H2
+CLASS="sect2"
+><A
+NAME="static-pages-revision-history"
+>2.2.7. Revision History</A
+></H2
+><DIV
+CLASS="informaltable"
+><A
+NAME="AEN254"
+></A
+><TABLE
+BORDER="1"
+CLASS="CALSTABLE"
+CELLPADDING="10"
+><THEAD
+><TR
+><TH
+ALIGN="LEFT"
+VALIGN="MIDDLE"
+>Document Revision #</TH
+><TH
+ALIGN="LEFT"
+VALIGN="MIDDLE"
+>Action Taken, Notes</TH
+><TH
+ALIGN="LEFT"
+VALIGN="MIDDLE"
+>When?</TH
+><TH
+ALIGN="LEFT"
+VALIGN="MIDDLE"
+>By Whom?</TH
+></TR
+></THEAD
+><TBODY
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="MIDDLE"
+>0.4</TD
+><TD
+ALIGN="LEFT"
+VALIGN="MIDDLE"
+>Cleaned up for release.</TD
+><TD
+ALIGN="LEFT"
+VALIGN="MIDDLE"
+>2001/03/05</TD
+><TD
+ALIGN="LEFT"
+VALIGN="MIDDLE"
+>Brandoch Calef</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="MIDDLE"
+>0.3</TD
+><TD
+ALIGN="LEFT"
+VALIGN="MIDDLE"
+>Some features really belong in general-comments, 
+	      and have been marked as such.</TD
+><TD
+ALIGN="LEFT"
+VALIGN="MIDDLE"
+>2001/02/27</TD
+><TD
+ALIGN="LEFT"
+VALIGN="MIDDLE"
+>Brandoch Calef</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="MIDDLE"
+>0.2</TD
+><TD
+ALIGN="LEFT"
+VALIGN="MIDDLE"
+>Incorporation of suggestions from mbryzek.</TD
+><TD
+ALIGN="LEFT"
+VALIGN="MIDDLE"
+>2001/01/23</TD
+><TD
+ALIGN="LEFT"
+VALIGN="MIDDLE"
+>Brandoch Calef</TD
+></TR
+><TR
+><TD
+ALIGN="LEFT"
+VALIGN="MIDDLE"
+>0.1</TD
+><TD
+ALIGN="LEFT"
+VALIGN="MIDDLE"
+>Creation</TD
+><TD
+ALIGN="LEFT"
+VALIGN="MIDDLE"
+>2001/01/19</TD
+><TD
+ALIGN="LEFT"
+VALIGN="MIDDLE"
+>Brandoch Calef</TD
+></TR
+></TBODY
+></TABLE
+></DIV
+><P
+><B
+CLASS="phrase"
+>$Id$</B
+></P
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+SIZE="1"
+NOSHADE="NOSHADE"
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="dev-guide.html"
+>Prev</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>&nbsp;</TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Developer's guide</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="dev-guide.html"
+>Up</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>&nbsp;</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

@@ -1,0 +1,112 @@
+<sect1 id="installation" xreflabel="static-pages-installation">
+  <title>Static Pages Installation and Use</title>
+  
+  <para>
+    Static Pages is installed with the APM like any other package.  You
+    must have the General Comments package installed and mounted to use Static
+    Pages.
+  </para>
+  
+  <sect2 id="sp-sws-setup" xreflabel="static-pages-sws-setup">
+    <title>Site-wide Search Setup</title>
+    
+    <para>
+      One of the most useful features of this package is that it allows
+      static pages to be searched from the Site-wide Search package.
+      To use this function:
+    </para>
+    <orderedlist>
+      <listitem><simpara>Install the Site-wide Search package, including support 
+	  for the <computeroutput>content_revision</computeroutput> object 
+	  type.</simpara></listitem>
+      <listitem><simpara>Feed the
+	  <filename>static-pages/sql/static-pages-sws.sql</filename> file to
+	  the Oracle schema belonging to your ACS installation.</simpara>
+      </listitem>
+      <listitem><simpara>Try it out: scan the file system for static pages, do 
+	  <computeroutput>exec sws_service.rebuild_all_index</computeroutput>
+	  in <filename>sqlplus</filename> to force the index to rebuild, and 
+	  visit the URL where you mounted Site-wide Search.</simpara></listitem>
+    </orderedlist>
+
+    <para>
+      Site-wide Search performance can sometimes be enhanced by the following
+      procedure:
+      <orderedlist>
+	<listitem><para>In Oracle, build a concatenated index on
+	    <computeroutput>acs_contents</computeroutput> thus:
+	    <programlisting>create index acs_contents_ctnt_srchable_idx on acs_contents(content_id,searchable_p);</programlisting>
+	  </para>
+	</listitem>
+	<listitem><para>In <filename>/packages/site-wide-search/www/search.tcl</filename>, insert a hint into the database queries:
+	    <programlisting>set query "select  <userinput>/*+ INDEX(acc acs_contents_ctnt_srchable_idx) */</userinput> score(1) as rank, ...</programlisting>
+	  </para>
+	</listitem>
+      </orderedlist>
+    </para>
+  </sect2>
+
+  <sect2 id="sp-use" xreflabel="static-pages-overview">
+    <title>A Brief Tour of Static Pages</title>
+
+    <para>
+      Suppose you've got Static Pages installed and mounted at
+      <filename>/statics/</filename>.  Let's try out each of its
+      functions.
+    </para>
+
+    <orderedlist>
+      <listitem><simpara>
+	  Put some static pages somewhere under your server's pageroot
+	  (typically <filename>/web/service_name/www/</filename>).  This is 
+	  where Static Pages will look for files.
+	</simpara></listitem>
+
+      <listitem><simpara>
+	  Logged in as an admin, visit <filename>/statics/admin/</filename>.
+	  The page will assert that "<computeroutput>There are 0 static pages 
+	    in the system</computeroutput>".  This is because the filesystem 
+	  has not yet been scanned.</simpara></listitem>
+
+      <listitem><simpara>
+	  Click "<computeroutput>Scan filesystem for static 
+	    pages</computeroutput>".  The server will load every
+	  <computeroutput>*.html</computeroutput> and 
+	  <computeroutput>*.htm</computeroutput> file into the database, which
+	  may take some time if there are many of them.  Perform the
+	  filesystem scan again and it will resynchronize the filesystem with
+	  the database, adding, updating, and removing entries from the
+	  content repository as needed.
+	</simpara></listitem>
+
+      <listitem><simpara>
+	  Return to the admin page and try "<computeroutput>Change
+	    permissions</computeroutput>".  By default, users are allowed
+	  to leave comments on any static page in the system (by following the
+	  "<computeroutput>Add a Comment</computeroutput>" link at the bottom
+	  of the page), and the full text of the comments will be displayed 
+	  one after another at the bottom of the page.  These properties may 
+	  be changed by toggling the settings displayed with each file.  Try 
+	  toggling permissions and visiting the corresponding page.  You may
+	  need to reload the page for your browser to flush its cache.</simpara>
+
+	<simpara>
+	  Back on the Commentability Designation page, notice that each 
+	  directory is 
+	  marked "<computeroutput>children commentable</computeroutput>" or
+	  "<computeroutput>children not commentable</computeroutput>".  When
+	  new static pages are created under the directory, they will
+	  inherit this setting.  Toggling this will change the settings of all
+	  descendants.  At the bottom of the page is a self-explanatory form 
+	  to change the settings of all files containing a given pattern.
+	</simpara></listitem>
+	  
+    </orderedlist>
+  </sect2>
+</sect1>
+
+<!--
+ Local Variables:
+ sgml-parent-document: ("index.xml" "chapter" "sect1")
+ End:
+-->

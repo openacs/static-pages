@@ -1,0 +1,239 @@
+<sect1 id="static-pages-requirements" xreflabel="Static Pages Requirements">
+  <title>Static Pages Requirements</title>
+
+
+  <authorblurb>
+    <para>By <ulink url="mailto:bcalef@arsdigita.com">Brandoch Calef</ulink></para>
+  </authorblurb>
+
+
+  <sect2 id="static-pages-requirements-introduction">
+    <title>Introduction</title>
+
+    <para>
+      This is the requirements document for the Static Pages package.
+    </para>
+
+    <para>
+      The Static Pages package searches the file system for static pages and
+      loads them into the database.  Because all pages are stored in the 
+      database, their contents are available to <computeroutput>site-wide-search</computeroutput> and other 
+      packages.  The system also accepts and displays user-contributed comments
+      on static pages. Site administrators may easily manage these functions 
+      (to disallow comments on certain pages, for example) via the admin pages.
+    </para>
+  </sect2>
+
+  <sect2 id="static-pages-requirements-system-app-overview">
+    <title>System/Application Overview</title>
+    <para>
+      The Static Pages package stores every static page on the site in the
+      content repository so that they will be available to <computeroutput>site-wide-search</computeroutput>
+      and other packages.
+      When a commentable static page is requested, the <computeroutput>general-comments</computeroutput>
+      package is used to attach to it a list of existing comments
+      and an "add a comment" link.
+      In this way, the problems of storing and searching content and 
+      managing comments are passed on to other packages.
+    </para>
+  </sect2>
+
+  <sect2 id="static-pages-requirements-cases">
+    <title>Use-cases and User-scenarios</title>
+
+    <itemizedlist>
+      <listitem><para>an administrator wants to know which static pages
+	  contain the word "pomegranate" (without using 
+	  <filename>grep</filename>)</para>
+      </listitem>
+
+      <listitem><para>an administrator wants to allow users to make comments
+	  on some pages but not on others</para>
+      </listitem>
+
+      <listitem><para>a user visiting the 
+	  <filename>ca-pomegranates.html</filename> page wants to register his
+	  opinion about coastal vs. foothill pomegranates.</para>
+      </listitem>
+    </itemizedlist>
+  </sect2>
+
+  <sect2 id="static-pages-requirements-links">
+    <title>Related Links</title>
+
+    <itemizedlist>
+      <listitem><para><xref linkend="static-pages-design"></xref></para></listitem> 
+    </itemizedlist>
+
+  </sect2>
+
+  <sect2 id="static-pages-requirements-requirements">
+    <title>Requirements</title>
+
+    <sect3 id="req-db-sync"><title>Admin UI: DB sync</title>
+      <para>
+	The administrator's UI will include a command to synchronize the
+	database contents with the static files in the filesystem.
+      </para>
+    </sect3>
+
+    <sect3 id="req-admin-ui"><title>Admin UI: commentability designation</title>
+      <para>
+	For any given static page, the administator will be able to 
+	specify the following:
+	<orderedlist>
+	  <listitem>
+	    <para>Whether comments may be made on the page</para>
+	  </listitem>
+
+	  <listitem>
+	    <para>Whether comments are shown on the page</para>
+	  </listitem>
+
+	  <listitem>
+	    <para>Whether the page is included in a site-wide search 
+	      [deferred]</para>
+	  </listitem>
+	</orderedlist>
+      </para>
+    </sect3>
+
+    <sect3 id="req-mass-exclusion"><title>Admin UI: index exclusion by pattern</title>
+      <para>
+	An administrator will be able to exclude from the site-wide index
+	any static pages whose URL or title match a pattern.
+      </para>
+    </sect3>
+
+    <sect3 id="req-mass-designation"><title>Admin UI: commentability designation by pattern [deferred]</title>
+      <para>
+	An administrator will be able to the commentability status of
+	any static pages whose URL or title match a pattern.
+      </para>
+    </sect3>
+
+    <sect3 id="req-report"><title>Admin UI: static pages report</title>
+      <para>
+	An administrator will be able to view a report summarizing
+	the number, age, etc. of comments made on each static page.
+	[This requires support from general-comments.  A feature request has
+	been put in.]
+      </para>
+    </sect3>
+
+    <sect3 id="req-ui-pages"><title>Public UI: commentable pages</title>
+      <para>
+	When a user visits a static page on which comments are permitted,
+	the existing comments will be displayed (if the administrator has 
+	designated that they should be) along with a link to add a new comment.
+      </para>
+    </sect3>
+
+    <sect3 id="req-search"><title>Support for site-wide search</title>
+      <para>
+	The contents of static pages will be made available to the 
+	<computeroutput>site-wide-search</computeroutput> package.
+      </para>
+    </sect3>
+    
+    <sect3 id="old-reqs"><title>Non-requirements: ACS 3.x Static features</title>
+      <para>
+	The ACS 3.x version of Static Pages would log each hit to a static
+	page so that it could produce a report showing who hit each page and
+	which pages a particular user visited.  These functions belong in a 
+	"clickstream" package that tracks statistics for all pages, not just 
+	static ones.
+      </para>
+
+      <para>
+	ACS 3.x Static Pages also included a spider to visit each static
+	page and check for bad links.  Again, this feature is not specific
+	to static pages, and is better addressed with a more general tool.
+      </para>
+    </sect3>
+
+  </sect2>
+
+  <sect2 id="static-pages-requirements-implementation">
+    <title>Implementation Notes</title>
+
+    <para>
+      <xref linkend="req-ui-pages"></xref>:  implement by using
+      <computeroutput>rp_register_extension_handler</computeroutput> to register a proc for *.html files.
+      The registered proc will check if the page is commentable, and if so 
+      make the necessary calls to <computeroutput>general-comments</computeroutput>.  The "is this page
+      commentable?" query will be cached with util_memoize.
+    </para>
+
+    <para>
+      <xref linkend="req-search"></xref>: <computeroutput>site-wide-search</computeroutput> can search
+      anything in the content repository, so that's where the pages 
+      should be stored.
+    </para>
+
+    <para><xref linkend="req-mass-exclusion"></xref>:  implement
+      using CR folders to allow admins to exclude entire directories.</para>
+
+    <para>Designate commentability using the 
+      <computeroutput>general_comments_create</computeroutput> privilege
+      defined by the <computeroutput>general-comments</computeroutput>
+      package.
+    </para>
+
+  </sect2>
+
+  <sect2 id="static-pages-revision-history">
+    <title>Revision History</title>
+
+    
+    <informaltable>
+      <tgroup cols="4">
+	<thead>
+	  <row>
+	    <entry>Document Revision #</entry>
+	    <entry>Action Taken, Notes</entry>
+	    <entry>When?</entry>
+	    <entry>By Whom?</entry>
+	  </row>
+	</thead>
+
+	<tbody>
+	  <row>
+	    <entry>0.4</entry>
+	    <entry>Cleaned up for release.</entry>
+	    <entry>2001/03/05</entry>
+	    <entry>Brandoch Calef</entry>
+	  </row>
+	  <row>
+	    <entry>0.3</entry>
+	    <entry>Some features really belong in general-comments, 
+	      and have been marked as such.</entry>
+	    <entry>2001/02/27</entry>
+	    <entry>Brandoch Calef</entry>
+	  </row>
+	  <row>
+	    <entry>0.2</entry>
+	    <entry>Incorporation of suggestions from mbryzek.</entry>
+	    <entry>2001/01/23</entry>
+	    <entry>Brandoch Calef</entry>
+	  </row>
+	  <row>
+	    <entry>0.1</entry>
+	    <entry>Creation</entry>
+	    <entry>2001/01/19</entry>
+	    <entry>Brandoch Calef</entry>
+	  </row>
+
+	</tbody></tgroup></informaltable>
+
+    <para><phrase role="cvstag">$Id$</phrase></para>
+    
+  </sect2>
+
+</sect1>
+
+<!--
+ Local Variables:
+ sgml-parent-document: ("index.xml" "chapter" "sect1")
+ End:
+-->

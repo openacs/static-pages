@@ -1,0 +1,355 @@
+<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.01 Transitional//EN">
+<HTML
+><HEAD
+><TITLE
+>ACS Administrator's guide</TITLE
+><META
+NAME="GENERATOR"
+CONTENT="aD Hack of: Modular DocBook HTML Stylesheet Version 1.60"><LINK
+REL="HOME"
+TITLE="Static Pages"
+HREF="index.html"><LINK
+REL="PREVIOUS"
+TITLE="Static Pages"
+HREF="index.html"><LINK
+REL="NEXT"
+TITLE="Developer's guide"
+HREF="dev-guide.html"><LINK
+REL="STYLESHEET"
+TYPE="text/css"
+HREF="ad-doc.css"></HEAD
+><BODY
+CLASS="chapter"
+BGCOLOR="#FFFFFF"
+TEXT="#000000"
+LINK="#0000FF"
+VLINK="#840084"
+ALINK="#0000FF"
+><DIV
+CLASS="NAVHEADER"
+><TABLE
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TH
+COLSPAN="3"
+ALIGN="center"
+>Static Pages</TH
+></TR
+><TR
+><TD
+WIDTH="10%"
+ALIGN="left"
+VALIGN="bottom"
+><A
+HREF="index.html"
+>Prev</A
+></TD
+><TD
+WIDTH="80%"
+ALIGN="center"
+VALIGN="bottom"
+></TD
+><TD
+WIDTH="10%"
+ALIGN="right"
+VALIGN="bottom"
+><A
+HREF="dev-guide.html"
+>Next</A
+></TD
+></TR
+></TABLE
+><HR
+SIZE="1"
+NOSHADE="NOSHADE"
+ALIGN="LEFT"
+WIDTH="100%"></DIV
+><DIV
+CLASS="chapter"
+><H1
+><A
+NAME="acs-admin-guide"
+>Chapter 1. ACS Administrator's guide</A
+></H1
+><DIV
+CLASS="sect1"
+><H1
+CLASS="sect1"
+><A
+NAME="installation"
+>1.1. Static Pages Installation and Use</A
+></H1
+><DIV
+CLASS="TOC"
+><DL
+><DT
+><B
+>Table of Contents</B
+></DT
+><DT
+>1.1.1. <A
+HREF="acs-admin-guide.html#sp-sws-setup"
+>Site-wide Search Setup</A
+></DT
+><DT
+>1.1.2. <A
+HREF="acs-admin-guide.html#sp-use"
+>A Brief Tour of Static Pages</A
+></DT
+></DL
+></DIV
+><P
+>&#13;    Static Pages is installed with the APM like any other package.  You
+    must have the General Comments package installed and mounted to use Static
+    Pages.
+  </P
+><DIV
+CLASS="sect2"
+><H2
+CLASS="sect2"
+><A
+NAME="sp-sws-setup"
+>1.1.1. Site-wide Search Setup</A
+></H2
+><P
+>&#13;      One of the most useful features of this package is that it allows
+      static pages to be searched from the Site-wide Search package.
+      To use this function:
+    </P
+><OL
+TYPE="1"
+><LI
+><P
+>Install the Site-wide Search package, including support 
+	  for the <TT
+CLASS="computeroutput"
+>content_revision</TT
+> object 
+	  type.</P
+></LI
+><LI
+><P
+>Feed the
+	  <TT
+CLASS="filename"
+>static-pages/sql/static-pages-sws.sql</TT
+> file to
+	  the Oracle schema belonging to your ACS installation.</P
+></LI
+><LI
+><P
+>Try it out: scan the file system for static pages, do 
+	  <TT
+CLASS="computeroutput"
+>exec sws_service.rebuild_all_index</TT
+>
+	  in <TT
+CLASS="filename"
+>sqlplus</TT
+> to force the index to rebuild, and 
+	  visit the URL where you mounted Site-wide Search.</P
+></LI
+></OL
+><P
+>&#13;      Site-wide Search performance can sometimes be enhanced by the following
+      procedure:
+      <OL
+TYPE="1"
+><LI
+><P
+CLASS="listitem"
+>In Oracle, build a concatenated index on
+	    <TT
+CLASS="computeroutput"
+>acs_contents</TT
+> thus:
+	    <PRE
+CLASS="programlisting"
+>    create index acs_contents_ctnt_srchable_idx on acs_contents(content_id,searchable_p);</PRE
+>
+	  </P
+></LI
+><LI
+><P
+CLASS="listitem"
+>In <TT
+CLASS="filename"
+>/packages/site-wide-search/www/search.tcl</TT
+>, insert a hint into the database queries:
+	    <PRE
+CLASS="programlisting"
+>    set query "select  <TT
+CLASS="userinput"
+><B
+>/*+ INDEX(acc acs_contents_ctnt_srchable_idx) */</B
+></TT
+> score(1) as rank, ...</PRE
+>
+	  </P
+></LI
+></OL
+>
+    </P
+></DIV
+><DIV
+CLASS="sect2"
+><H2
+CLASS="sect2"
+><A
+NAME="sp-use"
+>1.1.2. A Brief Tour of Static Pages</A
+></H2
+><P
+>&#13;      Suppose you've got Static Pages installed and mounted at
+      <TT
+CLASS="filename"
+>/statics/</TT
+>.  Let's try out each of its
+      functions.
+    </P
+><OL
+TYPE="1"
+><LI
+><P
+>&#13;	  Put some static pages somewhere under your server's pageroot
+	  (typically <TT
+CLASS="filename"
+>/web/service_name/www/</TT
+>).  This is 
+	  where Static Pages will look for files.
+	</P
+></LI
+><LI
+><P
+>&#13;	  Logged in as an admin, visit <TT
+CLASS="filename"
+>/statics/admin/</TT
+>.
+	  The page will assert that "<TT
+CLASS="computeroutput"
+>There are 0 static pages 
+	    in the system</TT
+>".  This is because the filesystem 
+	  has not yet been scanned.</P
+></LI
+><LI
+><P
+>&#13;	  Click "<TT
+CLASS="computeroutput"
+>Scan filesystem for static 
+	    pages</TT
+>".  The server will load every
+	  <TT
+CLASS="computeroutput"
+>*.html</TT
+> and 
+	  <TT
+CLASS="computeroutput"
+>*.htm</TT
+> file into the database, which
+	  may take some time if there are many of them.  Perform the
+	  filesystem scan again and it will resynchronize the filesystem with
+	  the database, adding, updating, and removing entries from the
+	  content repository as needed.
+	</P
+></LI
+><LI
+><P
+>&#13;	  Return to the admin page and try "<TT
+CLASS="computeroutput"
+>Change
+	    permissions</TT
+>".  By default, users are allowed
+	  to leave comments on any static page in the system (by following the
+	  "<TT
+CLASS="computeroutput"
+>Add a Comment</TT
+>" link at the bottom
+	  of the page), and the full text of the comments will be displayed 
+	  one after another at the bottom of the page.  These properties may 
+	  be changed by toggling the settings displayed with each file.  Try 
+	  toggling permissions and visiting the corresponding page.  You may
+	  need to reload the page for your browser to flush its cache.</P
+><P
+>&#13;	  Back on the Commentability Designation page, notice that each 
+	  directory is 
+	  marked "<TT
+CLASS="computeroutput"
+>children commentable</TT
+>" or
+	  "<TT
+CLASS="computeroutput"
+>children not commentable</TT
+>".  When
+	  new static pages are created under the directory, they will
+	  inherit this setting.  Toggling this will change the settings of all
+	  descendants.  At the bottom of the page is a self-explanatory form 
+	  to change the settings of all files containing a given pattern.
+	</P
+></LI
+></OL
+></DIV
+></DIV
+></DIV
+><DIV
+CLASS="NAVFOOTER"
+><HR
+SIZE="1"
+NOSHADE="NOSHADE"
+ALIGN="LEFT"
+WIDTH="100%"><TABLE
+WIDTH="100%"
+BORDER="0"
+CELLPADDING="0"
+CELLSPACING="0"
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+><A
+HREF="index.html"
+>Prev</A
+></TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+><A
+HREF="index.html"
+>Home</A
+></TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+><A
+HREF="dev-guide.html"
+>Next</A
+></TD
+></TR
+><TR
+><TD
+WIDTH="33%"
+ALIGN="left"
+VALIGN="top"
+>Static Pages</TD
+><TD
+WIDTH="34%"
+ALIGN="center"
+VALIGN="top"
+>&nbsp;</TD
+><TD
+WIDTH="33%"
+ALIGN="right"
+VALIGN="top"
+>Developer's guide</TD
+></TR
+></TABLE
+></DIV
+></BODY
+></HTML
+>

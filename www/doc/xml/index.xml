@@ -1,0 +1,49 @@
+<?xml version='1.0' ?>
+<!DOCTYPE book PUBLIC "-//OASIS//DTD DocBook XML V4.1.2//EN"
+               "http://www.oasis-open.org/docbook/xml/4.0/docbookx.dtd"
+[
+    <!ENTITY installation SYSTEM "installation.xml">
+    <!ENTITY requirements SYSTEM "requirements.xml">
+    <!ENTITY design SYSTEM "design.xml">
+]>
+
+<book>
+  <title>Static Pages</title>
+  <bookinfo>
+    <authorgroup>
+      <author>
+	<firstname>Brandoch</firstname>
+	<surname>Calef</surname>
+	<affiliation>
+	  <address><email>bcalef@arsdigita.com</email></address>
+	</affiliation>
+      </author>
+    </authorgroup>
+  </bookinfo>
+
+<!-- 
+  <chapter id="for-everyone" xreflabel="Package Introduction">
+    <title>Introduction</title>
+    <para><emphasis>Briefly answer two questions:</emphasis></para>
+    <itemizedlist>
+      <listitem><para>What does this package do?</para></listitem>
+      <listitem><para>How can my business benefit from using it?</para></listitem>
+    </itemizedlist>
+    <para><emphasis>You may want to cut and paste from your requirements doc.</emphasis></para>
+  </chapter>
+-->
+
+  <chapter id="acs-admin-guide" xreflabel="Package ACS Admin Guide">
+    <title>ACS Administrator's guide</title>
+    &installation;
+  </chapter>
+  
+  <chapter id="dev-guide" xreflabel="Static Pages Developer's Guide">
+    <title>Developer's guide</title>
+      &design;
+      &requirements;
+  </chapter>
+    
+  
+</book>
+
