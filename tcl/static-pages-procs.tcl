@@ -839,7 +839,7 @@ ad_proc -public sp_serve_html_page { } {
 
 	set file_mtime [clock format [file mtime $file]]
 
-	set body [template::adp_parse [acs_root_dir]/[ad_parameter -package_id $package_id TemplatePath] [list body $body sp_scripts $sp_scripts title $title file_mtime $file_mtime page_id $page_id] ]
+	set body [template::adp_parse [acs_root_dir]/[ad_parameter -package_id $package_id TemplatePath] [list body $body sp_scripts $sp_scripts title "$title" file_mtime $file_mtime page_id $page_id] ]
     }
     ns_return 200 text/html $body
 }
