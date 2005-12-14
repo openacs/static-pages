@@ -7,7 +7,7 @@
     <initial-install-p>f</initial-install-p>
     <singleton-p>f</singleton-p>
 
-    <version name="5.2.0d3" url="http://openacs.org/repository/download/apm/static-pages-5.2.0d3.apm">
+    <version name="5.2.0d4" url="http://openacs.org/repository/download/apm/static-pages-5.2.0d4.apm">
     <database-support>
         <database>oracle</database>
         <database>postgresql</database>
@@ -20,7 +20,7 @@
 
         <description format="text/plain">Static Pages loads the static content of a site from the filesystem into the database so that their contents are available to other packages, such as search and general-comments, and allows static content to be wrapped by the master template to provide persistent navigation.</description>
 
-        <provides url="static-pages" version="5.2.0d2"/>
+        <provides url="static-pages" version="5.2.0d4"/>
         <requires url="acs-content-repository" version="5.1.0d2"/>
         <requires url="acs-kernel" version="5.2.0d1"/>
         <requires url="acs-tcl" version="5.1.0d1"/>

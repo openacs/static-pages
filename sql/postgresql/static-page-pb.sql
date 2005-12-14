@@ -320,7 +320,7 @@ create or replace function static_page__new_folder (
                         v_creation_date,   -- creation_date
                         p_creation_user,   -- creation_user
                         p_creation_ip,     -- creation_ip
-			''f'',             -- secuity_inherit_p	
+			''f'' :: boolean,             -- secuity_inherit_p	
                         v_package_id
                 );
 
@@ -909,7 +909,7 @@ create or replace function static_page__new_folder (
                         v_creation_date,   -- creation_date
                         p_creation_user,   -- creation_user
                         p_creation_ip,     -- creation_ip
-			''f''		-- secuity_inherit_p	
+			''f'' :: boolean		-- secuity_inherit_p	
 
                 );
 
