@@ -9,7 +9,7 @@ if { ![nsv_exists CR_LOCATIONS STATIC_PAGES] } {
     # the server root (e.g., "/web/mysite/"), not the web root (e.g.,
     # "/web/mysite/www/"):  --atp@piskorski.com, 2002/12/12 16:17 EST
 
-    nsv_set CR_LOCATIONS STATIC_PAGES "[file dirname [string trimright [ns_info tcllib] "/"]]"
+    nsv_set CR_LOCATIONS STATIC_PAGES "[file dirname [string trimright $::acs::tcllib "/"]]"
 }
 
 
