@@ -1,4 +1,4 @@
 <master>
-  <property name="title">static files</property>
+  <property name="doc(title)">static files</property>
 
 @listing;noquote@
