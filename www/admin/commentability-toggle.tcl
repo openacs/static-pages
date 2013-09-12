@@ -10,7 +10,7 @@ ad_page_contract {
     recurse:boolean
 }
 
-if [ad_permission_p -user_id [acs_magic_object the_public] $item_id general_comments_create] {
+if [permission::permission_p -party_id [acs_magic_object the_public] -object_id $item_id -privilege general_comments_create] {
     db_exec_plsql revoke_commentability {
 	begin
 	    static_page.revoke_permission(:item_id,acs.magic_object_id('the_public'),'general_comments_create',

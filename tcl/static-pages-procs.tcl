@@ -51,7 +51,7 @@ ad_proc -public sp_sync_cr_with_filesystem_scheduled {{}} {
         order by package_id
     } {
         set root_folder_id [sp_root_folder_id $package_id]
-        set fs_root "[acs_root_dir][ad_parameter -package_id $package_id {fs_root}]"
+        set fs_root "[acs_root_dir][parameter::get -package_id $package_id -parameter {fs_root}]"
 
         ns_log Debug "$proc_name: About to scan the filesystem for:  package_id '$package_id', instance_name '$instance_name', fs_root '$fs_root':"
 
@@ -294,7 +294,7 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
     set fs_trimmed [string trimright $fs_root "/"]
     set fs_trimmed_length [string length $fs_trimmed]
 
-    set static_page_regexp "\\.[join [split [string trim [ad_parameter -package_id $package_id AllowedExtensions]] " "] "$|\\."]$"
+    set static_page_regexp "\\.[join [split [string trim [parameter::get -package_id $package_id -parameter AllowedExtensions]] " "] "$|\\."]$"
 
     # TODO: What happens if at some point, an Admin CHANGES the
     # fs_root parameter for a Static Pages package instance?  BAD
@@ -757,7 +757,7 @@ ad_proc -public sp_serve_html_page { } {
     set comment_p [parameter::get -package_id $package_id -parameter CommentsDisplayedP -default 1]
 
     set file [ad_conn file]
-    ad_conn -set subsite_id [site_node_closest_ancestor_package "acs-subsite"]
+    ad_conn -set subsite_id [site_node::closest_ancestor_package -include_self -package_key "acs-subsite"]
 
     # If the page is in the db, serve it carefully; otherwise just dump it out.
     # We are careful to use ns_returnfile if possible since it is much more 
@@ -778,7 +778,7 @@ ad_proc -public sp_serve_html_page { } {
 
         set comment_link ""
         if { $comment_p } {
-            if { [ad_permission_p -user_id [acs_magic_object the_public] $page_id general_comments_create] } {
+            if { [permission::permission_p -party_id [acs_magic_object the_public] -object_id $page_id -privilege general_comments_create] } {
                 append comment_link "<center>[general_comments_create_link -object_name [lindex $page_info 0] $page_id [ad_conn url]]</center>"
             }
             append comment_link "[general_comments_get_comments -print_content_p [lindex $page_info 1] $page_id [ad_conn url]]"
@@ -839,7 +839,7 @@ ad_proc -public sp_serve_html_page { } {
 
 	set file_mtime [clock format [file mtime $file]]
 
-	set body [template::adp_parse [acs_root_dir]/[ad_parameter -package_id $package_id TemplatePath] [list body $body sp_scripts $sp_scripts title "$title" file_mtime $file_mtime page_id $page_id] ]
+	set body [template::adp_parse [acs_root_dir]/[parameter::get -package_id $package_id -parameter TemplatePath] [list body $body sp_scripts $sp_scripts title "$title" file_mtime $file_mtime page_id $page_id] ]
     }
     ns_return 200 text/html $body
 }
@@ -862,7 +862,7 @@ ad_proc -private sp_register_extension {} {
 
     array set extensions_arr [list]
     foreach package_id $package_ids {
-        foreach extension [split [string tolower [string trim [ad_parameter -package_id $package_id AllowedExtensions]]] " "] {
+        foreach extension [split [string tolower [string trim [parameter::get -package_id $package_id -parameter AllowedExtensions]]] " "] {
             set extensions_arr($extension) {}
         }
     }

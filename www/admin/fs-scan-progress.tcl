@@ -48,7 +48,7 @@ $context_bar
 
 set package_id [ad_conn package_id]
 set root_folder_id [sp_root_folder_id $package_id]
-set fs_root "[acs_root_dir][ad_parameter -package_id $package_id {fs_root}]"
+set fs_root "[acs_root_dir][parameter::get -package_id $package_id -parameter {fs_root}]"
 
 ns_write "
 <p>
