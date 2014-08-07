@@ -6,7 +6,7 @@ ad_page_contract {
     @creation-date 2001-02-23
     @cvs-id $Id$
 } {
-    item_id:integer
+    item_id:naturalnum,notnull
 }
 
 db_dml toggle_display_policy {

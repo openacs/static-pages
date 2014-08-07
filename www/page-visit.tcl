@@ -7,7 +7,7 @@ ad_page_contract {
     @creation-date 2001-03-05
     @cvs-id $Id$
 } {
-    page_id:integer
+    page_id:naturalnum,notnull
 }
 
 if { ![db_0or1row sp_path { select filename from static_pages where static_page_id = :page_id }] } {

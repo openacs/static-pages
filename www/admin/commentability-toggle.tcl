@@ -6,7 +6,7 @@ ad_page_contract {
     @creation-date 2001-02-20
     @cvs-id $Id$
 } {
-    item_id:integer
+    item_id:naturalnum,notnull
     recurse:boolean
 }
 
