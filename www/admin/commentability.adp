@@ -26,17 +26,17 @@
 <form action="commentability-contain">
 Or change all files whose full paths contain:
 <table>
-<tr><td colspan=3><input type=text size=80 maxlength=80
-name=contained_string value="">
+<tr><td colspan="3"><input type="text" size="80" maxlength="80"
+name="contained_string" value="">
 <br><font size=-1>
 For example, <code>w/doc</code> will match <code>@acs_root@/www/doc/foobar.html</code>
 and <code>@acs_root@/www/cow/doctor.html</code>.
 </font></td></tr>
-<td><input type=radio name=change_option value="grant_p_1" checked>&nbsp;&nbsp;Commentable
-<br><input type=radio name=change_option value="grant_p_0">&nbsp;&nbsp;Not commentable </td>
-<td><input type=radio name=change_option value="show_p_1">&nbsp;&nbsp;Comments displayed
-<br><input type=radio name=change_option value="show_p_0">&nbsp;&nbsp;Comments summarized</td>
-<td><input type=submit value="Change"></td>
+<td><input type="radio" name="change_option" value="grant_p_1" checked>&nbsp;&nbsp;Commentable
+<br><input type="radio" name="change_option" value="grant_p_0">&nbsp;&nbsp;Not commentable </td>
+<td><input type="radio" name="change_option" value="show_p_1">&nbsp;&nbsp;Comments displayed
+<br><input type="radio" name="change_option" value="show_p_0">&nbsp;&nbsp;Comments summarized</td>
+<td><input type="submit" value="Change"></td>
 </tr>
 </table>
 </form>
