@@ -1,6 +1,6 @@
 <master>
-<property name="doc(title)">@title;noquote@</property>
-<property name="context">@context;noquote@</property>
+<property name="doc(title)">@title;literal@</property>
+<property name="context">@context;literal@</property>
 
 <p>There @are@ @n_static_pages@ static @pages@ in the 
 tree rooted at <code>@fs_root@</code>.</p>
