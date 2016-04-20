@@ -53,7 +53,7 @@ drop table sp_extant_files;
 drop table sp_extant_folders;
 
 drop index static_pages_filename_idx;
-drop table static_pages;
+drop table static_pages cascade;
 
 drop index sp_folders_parent_id_idx;
 drop index sp_folders_package_id_idx;
@@ -63,6 +63,6 @@ drop trigger sp_folders_update_tr on sp_folders;
 drop function sp_folders_insert_tr();
 drop function sp_folders_update_tr();
 drop function sp_folders_get_tree_sortkey(int);
-drop table sp_folders;
+drop table sp_folders cascade;
 
 \i static-pages-sc-drop.sql
