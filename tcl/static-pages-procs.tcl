@@ -797,6 +797,7 @@ ad_proc -public sp_serve_html_page { } {
             } errmsg] } {
                 ad_return_error "Error reading file" \
                     "This error was encountered while reading $filename: $errmsg"
+		ad_script_abort
             } 
 
 

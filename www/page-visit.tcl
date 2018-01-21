@@ -34,12 +34,13 @@ if { [string first "/www/" $filename] == 0 } {
 
     if { ![regexp "^/packages/$package_dir/www/(.+)" $filename match url_part] } {
         ad_return_error "Error in filename" "This page has an invalid filename: '$filename'."
+	ad_script_abort
     }
     set redirect_to "[sp_package_url $package_dir]$url_part"
 
 } else {
     ad_return_error "Error in filename" "This page has an invalid filename: '$filename'."
-    return
+    ad_script_abort
 }
 
 ad_returnredirect $redirect_to
