@@ -15,7 +15,7 @@ ad_proc -public sp_sync_cr_with_filesystem_scheduled {{}} {
     just like the www/admin/fs-scan-progress.tcl page does.
 
     <p>
-    Note that if you have comments turned on, be <em>very carefull</em>
+    Note that if you have comments turned on, be <em>very careful</em>
     running this, as the current implementation of
     sp_sync_cr_with_filesystem will <em>destroy</em> any user
     contributed comments on the file if you temporarily delete the
