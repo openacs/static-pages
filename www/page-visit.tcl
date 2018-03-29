@@ -21,7 +21,7 @@ if { ![db_0or1row sp_path { select filename from static_pages where static_page_
 # path in the database to allow leaving the static-pages in the filesystem
 
 
-# There are two possiblities: Either the static page is beneath the
+# There are two possibilities: Either the static page is beneath the
 # site global www/ directory (and the filename starts "/www/"), or it
 # is beneath one of the package www directories (and the filename
 # starts "/packages/":

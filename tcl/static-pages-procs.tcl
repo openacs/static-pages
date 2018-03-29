@@ -460,7 +460,7 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
 		# the Oracle driver apparently doesn't support passing BLOBs to
 		# PL/SQL (or passing a BLOB from a file into a PL/SQL function),
 		# so the PL/SQL call and the BLOB loading must be performed
-		# seperately.  This is simple (get item_id from static_page.new(),
+		# separately.  This is simple (get item_id from static_page.new(),
 		# then update cr_revisions to insert the blob) but involved direct
 		# manipulation of the cr_revisions table.
 
@@ -504,7 +504,7 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
 
     # TODO: This is very wrong.  Should NEVER just delete all content! 
     # Note that the canonical content of the file itself lives in the 
-    # fileystem and can easily be re-imported to the database, but 
+    # file system and can easily be re-imported to the database, but 
     # this ALSO blindly deletes all user-contributed comments which 
     # point to the file! 
     # 

@@ -28,7 +28,7 @@ set root_folder_id [sp_root_folder_id [ad_conn package_id]]
 # using the permissions API or the all_object_party_privilege_map view
 # is too slow.  We know it's safe to use acs_permissions because the
 # privilege is granted directly to the_public and it is granted on 
-# every folder and file (no inheritence).
+# every folder and file (no inheritance).
 #
 db_multirow dir_tree select_static_page "
 	select spf.folder_id,
