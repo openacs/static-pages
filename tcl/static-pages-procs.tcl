@@ -135,7 +135,7 @@ ad_proc -public sp_sync_cr_with_filesystem {
     @author Andrew Piskorski (atp@piskorski.com)
     @creation-date 2001/08/27
 } {
-   if { [empty_string_p $package_id] } {
+   if { $package_id eq "" } {
       set package_id [ad_conn package_id]
    }
 
@@ -179,7 +179,7 @@ ad_proc -private sp_sync_cr_with_filesystem_unlock {package_id} {
 }
 
 
-ad_proc -private sp_sync_cr_with_filesystem_internal { 
+ad_proc -private sp_sync_cr_with_filesystem_internal {
     {
         -file_add_proc ""
         -file_change_proc ""
@@ -197,38 +197,38 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
        static_page_regexp {}
     }
 } {
-   This procedure was originally named sp_sync_cr_with_filesystem
-   procedure, but has been renamed and modified so that it can be
-   wrapped inside the new sp_sync_cr_with_filesystem, to support the
-   mutex locking.
-   <p>
-   We wrap it because at the end of this proc, we must set
-   sp_sync_cr_with_filesystem_times($package_id) back to empty string.
-   But if we hit some random untrapped error partway through, we'll
-   never get there.  Therefore, we wrap this proc inside another, and
-   have the wrapper proc catch any errors thrown by this proc, set the
-   var back to empty string, then re-throw the error.
-   <p>
-   This procedure takes the exact same arguments as its
-   sp_sync_cr_with_filesystem wrapper proc, except for the addition of
-   return_mesg_var.
-   <p>
-   You should <em>never</em> call this procedure, except from
-   sp_sync_cr_with_filesystem.
+    This procedure was originally named sp_sync_cr_with_filesystem
+    procedure, but has been renamed and modified so that it can be
+    wrapped inside the new sp_sync_cr_with_filesystem, to support the
+    mutex locking.
+    <p>
+    We wrap it because at the end of this proc, we must set
+    sp_sync_cr_with_filesystem_times($package_id) back to empty string.
+    But if we hit some random untrapped error partway through, we'll
+    never get there.  Therefore, we wrap this proc inside another, and
+    have the wrapper proc catch any errors thrown by this proc, set the
+    var back to empty string, then re-throw the error.
+    <p>
+    This procedure takes the exact same arguments as its
+    sp_sync_cr_with_filesystem wrapper proc, except for the addition of
+    return_mesg_var.
+    <p>
+    You should <em>never</em> call this procedure, except from
+    sp_sync_cr_with_filesystem.
 
-   @param return_mesg_var Name of variable in which to return text
-   message, for presentation on a web page to the user.
+    @param return_mesg_var Name of variable in which to return text
+    message, for presentation on a web page to the user.
 
-   @param package_id <em>Must</em> be passed in, for this internal
-   version of the proc.
+    @param package_id <em>Must</em> be passed in, for this internal
+    version of the proc.
 
-   @author Brandoch Calef (bcalef@arsdigita.com)
-   @author Andrew Piskorski (atp@piskorski.com)
-   @creation-date 2001-02-07
+    @author Brandoch Calef (bcalef@arsdigita.com)
+    @author Andrew Piskorski (atp@piskorski.com)
+    @creation-date 2001-02-07
 } {
     set proc_name {sp_sync_cr_with_filesystem_internal}
 
-    if { [empty_string_p $package_id] } {
+    if { $package_id eq "" } {
         error "package_id '$package_id' is not valid."
     }
     upvar $return_mesg_var return_mesg
@@ -254,7 +254,7 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
         set other_start_time [nsv_get sp_sync_cr_fs_times $package_id]
     }
 
-    if { [empty_string_p $other_start_time] } {
+    if { $other_start_time eq "" } {
         # We're ok, no other copy is running.
         nsv_set $nsv $package_id [ns_time]
         set run_p 1
@@ -275,9 +275,9 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
         ns_log Warning $mesg
 
         set return_mesg "Another copy of this procedure is already running for
-       this package instance.  It started running $time_diff seconds
-       ago, at $other_time_pretty.  Only one copy may run at a time.
-       Please wait and then try again."
+        this package instance.  It started running $time_diff seconds
+        ago, at $other_time_pretty.  Only one copy may run at a time.
+        Please wait and then try again."
 
         # Whether you actually see this happen depends whether the
         # second thread running this proc gets scheduled or not before
@@ -305,67 +305,66 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
     # --atp@piskorski.com, 2002/09/15 10:03 EDT
 
     foreach file [ad_find_all_files $fs_root] {
-	if { [regexp -nocase $static_page_regexp $file match] } {
-	    # Chop the starting path off of the full pathname and split it up:
-	    set path [split [string range $file $fs_trimmed_length end] "/"]
-	    # Throw away the first entry (empty) and the last entry (which is the filename):
-	    set path [lrange $path 1 [expr [llength $path]-2]]
+        if { [regexp -nocase $static_page_regexp $file match] } {
+            # Chop the starting path off of the full pathname and split it up:
+            set path [split [string range $file $fs_trimmed_length end] "/"]
+            # Throw away the first entry (empty) and the last entry (which is the filename):
+            set path [lrange $path 1 [expr [llength $path]-2]]
 
-	    set cumulative_path ""
-	    set parent_folder_id $root_folder_id
-	    foreach directory $path {
-		append cumulative_path "$directory/"
-		if (![info exists path_exists($cumulative_path)]) {
-		    # check db
-		    set folder_id [db_string get_folder_id {
-			select nvl(content_item.get_id(:cumulative_path,:root_folder_id),0)
-			from dual
-		    }]
-		    # If the folder doesn't exist, create it.
-		    if { $folder_id == 0} {
-			set folder_id [db_exec_plsql create_new_folder {}]
-			if { [string length $folder_add_proc] > 0 } {
-			    uplevel $stack_depth "$folder_add_proc $cumulative_path $folder_id"
-			}
-		    } else {
-			if { [string length $folder_unchanged_proc] > 0 } {
-			    uplevel $stack_depth "$folder_unchanged_proc $cumulative_path $folder_id"
-			}
-		    }
-		    set path_exists($cumulative_path) $folder_id
-		    db_dml insert_path {
-			insert into sp_extant_folders (session_id,folder_id)
-			values (:sync_session_id,:folder_id)
-		    }
+            set cumulative_path ""
+            set parent_folder_id $root_folder_id
+            foreach directory $path {
+                append cumulative_path "$directory/"
+                if (![info exists path_exists($cumulative_path)]) {
+                    # check db
+                    set folder_id [db_string get_folder_id {
+                        select nvl(content_item.get_id(:cumulative_path,:root_folder_id),0)
+                        from dual
+                    }]
+                    # If the folder doesn't exist, create it.
+                    if { $folder_id == 0} {
+                        set folder_id [db_exec_plsql create_new_folder {}]
+                        if { [string length $folder_add_proc] > 0 } {
+                            uplevel $stack_depth "$folder_add_proc $cumulative_path $folder_id"
+                        }
+                    } else {
+                        if { [string length $folder_unchanged_proc] > 0 } {
+                            uplevel $stack_depth "$folder_unchanged_proc $cumulative_path $folder_id"
+                        }
+                    }
+                    set path_exists($cumulative_path) $folder_id
+                    db_dml insert_path {
+                        insert into sp_extant_folders (session_id,folder_id)
+                        values (:sync_session_id,:folder_id)
+                    }
 
-		} else {
-		    set folder_id $path_exists($cumulative_path)
-		}
-		set parent_folder_id $folder_id
-	    }
+                } else {
+                    set folder_id $path_exists($cumulative_path)
+                }
+            set parent_folder_id $folder_id
+            }
 
-	    # If the file is already in the db:
-	    #    Fetch it from the db and load the file from the filesystem
-	    #    If they differ:
-	    #        Insert the filesystem version into the db.
-	    # If the file isn't in the db:
-	    #    Insert it.
+            # If the file is already in the db:
+            #    Fetch it from the db and load the file from the filesystem
+            #    If they differ:
+            #        Insert the filesystem version into the db.
+            # If the file isn't in the db:
+            #    Insert it.
 
-	    # set sp_filename to the file path relative to the OpenACS
-	    # install dir, this is what gets inserted into the db - DaveB
-	    set sp_filename [sp_get_relative_file_path $file]
-	    set mtime_from_fs [file mtime $file]
+            # set sp_filename to the file path relative to the OpenACS
+            # install dir, this is what gets inserted into the db - DaveB
+            set sp_filename [sp_get_relative_file_path $file]
+            set mtime_from_fs [file mtime $file]
 
-   	    if [db_0or1row check_db_for_page {
-		select static_page_id, mtime as mtime_from_db from static_pages
-		where filename = :sp_filename
-	    }] {
-
-	       if { [catch {
-		    set fp [open $file r]
-		    set file_from_fs [read $fp]
-		    close $fp
-		} errmsg]} {
+            if [db_0or1row check_db_for_page {
+                select static_page_id, mtime as mtime_from_db from static_pages
+                where filename = :sp_filename
+            }] {
+                if { [catch {
+                    set fp [open $file r]
+                    set file_from_fs [read $fp]
+                    close $fp
+                } errmsg]} {
                     # Log and return an appropriate message, then
                     # continue on trying to process the other files.
                     # We do NOT want to abort the whole scan just
@@ -374,69 +373,67 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
 
                     set mesg "$proc_name: Error reading file: '$file':  [ns_quotehtml $errmsg]"
                     ns_log Error $mesg
-                    if { ![empty_string_p $file_read_error_proc] } {
+                    if { $file_read_error_proc ne "" } {
                         uplevel $stack_depth [list $file_read_error_proc $file $static_page_id $mesg]
                     }
                     continue
-		}
-	    
-		set file_updated 0
+                }
 
-		set storage_type [db_string get_storage_type ""]
+                set file_updated 0
 
-		switch $storage_type {
-		    "file" {
-			if {$mtime_from_fs != $mtime_from_db} {
-			    set file_updated 1	    
-			}
-		    }
-			
-		     "lob" {
-			    db_1row get_db_page {
-				select content as file_from_db from cr_revisions
-				where revision_id = content_item.get_live_revision(:static_page_id)
-			    }
-			 if {$file_from_db != $file_from_fs} {
-			     set file_updated 1
-			 }
-		     }
-		}
-		
-		if {$file_updated == 1} {
-		    db_dml update_db_file {
-			update cr_revisions set content = empty_blob()
-			where revision_id = content_item.get_live_revision(:static_page_id)
-			returning content into :1
-		    } -blob_files [list $file]
-		    if {$storage_type=="file"} {
+                set storage_type [db_string get_storage_type ""]
 
-			db_dml update_static_page {
-			    update static_pages set mtime = :mtime_from_fs
-			    where  static_page_id = :static_page_id
-			}
-		    }
-			if { [string length $file_change_proc] > 0 } {
-			    uplevel $stack_depth "$file_change_proc $file $static_page_id"
-			}
-		} else {
-		    if { [string length $file_unchanged_proc] > 0 } {
-			uplevel $stack_depth "$file_unchanged_proc $file $static_page_id"
-		    }
-		}
-		db_dml insert_file {
-		    insert into sp_extant_files (session_id,static_page_id)
-		    values (:sync_session_id,:static_page_id)
-		}
-	    } else {
+                switch $storage_type {
+                    "file" {
+                        if {$mtime_from_fs != $mtime_from_db} {
+                            set file_updated 1
+                        }
+                    }
+                    "lob" {
+                        db_1row get_db_page {
+                            select content as file_from_db from cr_revisions
+                            where revision_id = content_item.get_live_revision(:static_page_id)
+                        }
+                        if {$file_from_db != $file_from_fs} {
+                             set file_updated 1
+                        }
+                    }
+                }
+
+                if {$file_updated == 1} {
+                    db_dml update_db_file {
+                        update cr_revisions set content = empty_blob()
+                        where revision_id = content_item.get_live_revision(:static_page_id)
+                        returning content into :1
+                    } -blob_files [list $file]
+                    if {$storage_type=="file"} {
+                        db_dml update_static_page {
+                            update static_pages set mtime = :mtime_from_fs
+                            where  static_page_id = :static_page_id
+                        }
+                    }
+                    if { [string length $file_change_proc] > 0 } {
+                        uplevel $stack_depth "$file_change_proc $file $static_page_id"
+                    }
+                } else {
+                    if { [string length $file_unchanged_proc] > 0 } {
+                        uplevel $stack_depth "$file_unchanged_proc $file $static_page_id"
+                    }
+                }
+                db_dml insert_file {
+                    insert into sp_extant_files (session_id,static_page_id)
+                    values (:sync_session_id,:static_page_id)
+                }
+            } else {
                 # The file is NOT in the db yet at all:
                 set static_page_id {}
 
-		# Try to extract a title:
-		if { [catch {
-		    set fp [open $file r]
-		    set file_contents [read $fp]
-		    close $fp
-		} errmsg]} {
+                # Try to extract a title:
+                if { [catch {
+                    set fp [open $file r]
+                    set file_contents [read $fp]
+                    close $fp
+                } errmsg]} {
                     # Log and return an appropriate message, then
                     # continue on trying to process the other files.
                     # We do NOT want to abort the whole scan just
@@ -445,24 +442,24 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
 
                     set mesg "$proc_name: Error reading file: '$file':  [ns_quotehtml $errmsg]"
                     ns_log Error $mesg
-                    if { ![empty_string_p $file_read_error_proc] } {
+                    if { $file_read_error_proc ne "" } {
                         uplevel $stack_depth [list $file_read_error_proc $file $static_page_id $mesg]
                     }
                     continue
-		}
+                }
 
                 # TODO:  This is very HTML specific:  --atp@piskorski.com, 2001/08/13 21:58 EDT
-		if { ![regexp -nocase {<title.*?>(.+?)</title} $file_contents match page_title] } {
-		    regexp {[^/]*$} $file page_title
-		}
+                if { ![regexp -nocase {<title.*?>(.+?)</title} $file_contents match page_title] } {
+                    regexp {[^/]*$} $file page_title
+                }
 
-		# Insert into the db:
-		# the Oracle driver apparently doesn't support passing BLOBs to
-		# PL/SQL (or passing a BLOB from a file into a PL/SQL function),
-		# so the PL/SQL call and the BLOB loading must be performed
-		# separately.  This is simple (get item_id from static_page.new(),
-		# then update cr_revisions to insert the blob) but involved direct
-		# manipulation of the cr_revisions table.
+                # Insert into the db:
+                # the Oracle driver apparently doesn't support passing BLOBs to
+                # PL/SQL (or passing a BLOB from a file into a PL/SQL function),
+                # so the PL/SQL call and the BLOB loading must be performed
+                # separately.  This is simple (get item_id from static_page.new(),
+                # then update cr_revisions to insert the blob) but involved direct
+                # manipulation of the cr_revisions table.
 
                 # If you run two copies of sp_sync_cr_with_filesystem
                 # at once, you CAN get "ORA-00001: unique constraint
@@ -479,7 +476,7 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
 
                     set mesg "$proc_name: do_sp_new failed for file '$file' with error:  [ns_quotehtml $errmsg]"
                     ns_log Error $mesg
-                    if { ![empty_string_p $file_read_error_proc] } {
+                    if { $file_read_error_proc ne "" } {
                         uplevel $stack_depth [list $file_read_error_proc $file $static_page_id $mesg]
                     }
                     continue
@@ -498,20 +495,20 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
                         values (:sync_session_id,:static_page_id)
                     }
                 }
-	    }
-	}
+            }
+        }
     }
 
-    # TODO: This is very wrong.  Should NEVER just delete all content! 
-    # Note that the canonical content of the file itself lives in the 
-    # file system and can easily be re-imported to the database, but 
-    # this ALSO blindly deletes all user-contributed comments which 
-    # point to the file! 
-    # 
-    # See also: http://openacs.org/bboard/q-and-a-fetch-msg.tcl?msg_id=0002U2 
-    # 
-    # --atp@piskorski.com, 2001/08/13 15:07 EDT 
- 
+    # TODO: This is very wrong.  Should NEVER just delete all content!
+    # Note that the canonical content of the file itself lives in the
+    # file system and can easily be re-imported to the database, but
+    # this ALSO blindly deletes all user-contributed comments which
+    # point to the file!
+    #
+    # See also: http://openacs.org/bboard/q-and-a-fetch-msg.tcl?msg_id=0002U2
+    #
+    # --atp@piskorski.com, 2001/08/13 15:07 EDT
+
     # Clean up any files that are in the db but no longer in the filesystem:
 
     # TODO: Why are we doing these two deletes after calling
@@ -519,12 +516,12 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
     # --atp@piskorski.com, 2001/08/23 02:20 EDT 
 
     db_exec_plsql delete_old_files {
-	begin
-	    static_page.delete_stale_items(:sync_session_id,:package_id);
+    begin
+        static_page.delete_stale_items(:sync_session_id,:package_id);
 
-	    delete from sp_extant_folders where session_id = :sync_session_id;
-	    delete from sp_extant_files where session_id = :sync_session_id;
-	end;
+        delete from sp_extant_folders where session_id = :sync_session_id;
+        delete from sp_extant_files where session_id = :sync_session_id;
+    end;
     }
 
     # TODO: We should have a sp_deleted_item hook just like we do for
@@ -549,9 +546,9 @@ ad_proc -public sp_root_folder_id { package_id } {
     # because static_page.get_root_folder will do DML (to create the
     # folder) if it can't find a root folder.
     return [db_exec_plsql get_root_folder_id {
-	begin
-	    :1 := static_page.get_root_folder(:package_id);
-	end;
+        begin
+            :1 := static_page.get_root_folder(:package_id);
+        end;
     }]
 }
 
@@ -567,27 +564,27 @@ ad_proc -public sp_change_matching_permissions {
     @creation-date 2001-02-23
 } {
     if { $grant_or_revoke != "grant" && $grant_or_revoke != "revoke" } {
-	ns_log Warning "sp_change_matching_permissions called with grant_or_revoke = $grant_or_revoke"
-	return
+        ns_log Warning "sp_change_matching_permissions called with grant_or_revoke = $grant_or_revoke"
+        return
     }
 
     db_exec_plsql grant_or_revoke_matching_permissions "
-	    begin
-	    for file_row in (
-		    select static_page_id from static_pages
-		    where folder_id in (
-			    select folder_id from sp_folders
-			    start with folder_id = :root_folder_id
-			    connect by parent_id = prior folder_id)
-		    and filename like '%${contained_string}%'
-	    ) loop
-		    acs_permission.${grant_or_revoke}_permission(
-			    object_id => file_row.static_page_id,
-			    grantee_id => acs.magic_object_id('the_public'),
-			    privilege => 'general_comments_create'
-		    );
-	    end loop;
-	    end;
+        begin
+        for file_row in (
+            select static_page_id from static_pages
+            where folder_id in (
+                select folder_id from sp_folders
+                start with folder_id = :root_folder_id
+                connect by parent_id = prior folder_id)
+            and filename like '%${contained_string}%'
+        ) loop
+            acs_permission.${grant_or_revoke}_permission(
+                object_id => file_row.static_page_id,
+                grantee_id => acs.magic_object_id('the_public'),
+                privilege => 'general_comments_create'
+            );
+        end loop;
+        end;
     "
 }
 
@@ -605,31 +602,31 @@ ad_proc -public sp_change_matching_display {
     @creation-date 2001-02-23
 } {
     if { $show_full_comments_p != "t" && $show_full_comments_p != "f" } {
-	ns_log Warning "sp_change_matching_permissions called with show_full_comments_p = $show_full_comments_p"
-	return
+        ns_log Warning "sp_change_matching_permissions called with show_full_comments_p = $show_full_comments_p"
+        return
     }
 
     db_foreach matching_static_page "
-	select static_page_id from static_pages
-	     where folder_id in (
-		     select folder_id from sp_folders
-		     start with folder_id = :root_folder_id
-		     connect by parent_id = prior folder_id)
-	     and filename like '%${contained_string}%'
-    " {
-	sp_flush_page $static_page_id
-    }	
+        select static_page_id from static_pages
+             where folder_id in (
+                 select folder_id from sp_folders
+                 start with folder_id = :root_folder_id
+                 connect by parent_id = prior folder_id)
+             and filename like '%${contained_string}%'
+        " {
+            sp_flush_page $static_page_id
+        }
 
     db_dml show_or_summarize_comments_matching "
-	    update static_pages set show_comments_p = :show_full_comments_p 
+        update static_pages set show_comments_p = :show_full_comments_p
                 where static_page_id in (
-		    select static_page_id from static_pages
-		    where folder_id in (
-			    select folder_id from sp_folders
-			    start with folder_id = :root_folder_id
-			    connect by parent_id = prior folder_id)
-		    and filename like '%${contained_string}%'
-	        )
+            select static_page_id from static_pages
+            where folder_id in (
+                select folder_id from sp_folders
+                start with folder_id = :root_folder_id
+                connect by parent_id = prior folder_id)
+            and filename like '%${contained_string}%'
+            )
     "
 }
 
@@ -652,7 +649,7 @@ ad_proc -private sp_get_relative_file_path { file } {
     return $relative_path
 }
 
- 
+
 ad_proc -private sp_get_page_info_query { page_id } {
     Returns a SQL query to get the page title and comment display policy.
 
@@ -696,24 +693,24 @@ ad_proc -public sp_flush_page { page_id } {
 
 
 ad_proc -public sp_package_key_is {} {
-   Simply returns the package key string for this package.
-   @author Andrew Piskorski (atp@piskorski.com)
-   @creation-date 2001/08/26
+    Simply returns the package key string for this package.
+    @author Andrew Piskorski (atp@piskorski.com)
+    @creation-date 2001/08/26
 } {
-   # TODO: Might want to have this pull and cache the actual key from
-   # the database.
-   return {static-pages}
+    # TODO: Might want to have this pull and cache the actual key from
+    # the database.
+    return {static-pages}
 }
 
 
 ad_proc -private sp_package_url {package_key} {
-   <p>Given a package key, return a URL of a mounted
-   package instance. If there is more than one instance
-   of the package mounted, the one with the lowest
-   <code>package_id</code> will be returned. If the
-   package is not instantiated or not mounted anywhere,
-   an error is raised. The proc is meant to be memoized.
-   </p>
+    <p>Given a package key, return a URL of a mounted
+    package instance. If there is more than one instance
+    of the package mounted, the one with the lowest
+    <code>package_id</code> will be returned. If the
+    package is not instantiated or not mounted anywhere,
+    an error is raised. The proc is meant to be memoized.
+    </p>
 } {
     set proc_name {sp_package_url}
 
@@ -785,7 +782,7 @@ ad_proc -public sp_serve_html_page { } {
         }
 
         # Here if comment_link is empty and we are not templating, just ns_returnfile.
-        if {[empty_string_p $comment_link]
+        if { $comment_link eq ""
             && ! $templating_enabled_p } {
             ns_returnfile 200 text/html $filename
             return
@@ -797,8 +794,8 @@ ad_proc -public sp_serve_html_page { } {
             } errmsg] } {
                 ad_return_error "Error reading file" \
                     "This error was encountered while reading $filename: $errmsg"
-		ad_script_abort
-            } 
+                ad_script_abort
+            }
 
 
             # Tcl needs a case-insensitive [string first] function.
@@ -823,24 +820,24 @@ ad_proc -public sp_serve_html_page { } {
     # If we did not return a file directly above we need to return the body, possibly after 
     # wrapping it in the master template.
     if { $templating_enabled_p } {
-	# Strip out the <body>..</body> part as page will now be part of a master template
-	set headers ""
-	set sp_scripts ""
-	set title ""
-	if {[regexp -nocase {(.*?)<body.*?>(.*)</body.*?>} $body match headers bodyless]} {
-	    set body $bodyless
-	}
-	# Get 0 or 1 <title>...</title> data to pass up to master template html headers
-	regexp -nocase {<title.*?>(.*?)</title.*?>} $headers match title
+        # Strip out the <body>..</body> part as page will now be part of a master template
+        set headers ""
+        set sp_scripts ""
+        set title ""
+        if {[regexp -nocase {(.*?)<body.*?>(.*)</body.*?>} $body match headers bodyless]} {
+            set body $bodyless
+        }
+        # Get 0 or 1 <title>...</title> data to pass up to master template html headers
+        regexp -nocase {<title.*?>(.*?)</title.*?>} $headers match title
 
-	# Get 0 or more <script>...</script> tags to pass up to master template html headers
-	while {[regexp -nocase {(<script.*?>.*?</script.*?>)(.*$)} $headers match ascript headers]} {
-	    append sp_scripts "\n$ascript"
-	}
+        # Get 0 or more <script>...</script> tags to pass up to master template html headers
+        while {[regexp -nocase {(<script.*?>.*?</script.*?>)(.*$)} $headers match ascript headers]} {
+            append sp_scripts "\n$ascript"
+        }
 
-	set file_mtime [clock format [file mtime $file]]
+        set file_mtime [clock format [file mtime $file]]
 
-	set body [template::adp_parse [acs_root_dir]/[parameter::get -package_id $package_id -parameter TemplatePath] [list body $body sp_scripts $sp_scripts title "$title" file_mtime $file_mtime page_id $page_id] ]
+        set body [template::adp_parse [acs_root_dir]/[parameter::get -package_id $package_id -parameter TemplatePath] [list body $body sp_scripts $sp_scripts title "$title" file_mtime $file_mtime page_id $page_id] ]
     }
     ns_return 200 text/html $body
 }

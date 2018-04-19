@@ -23,8 +23,8 @@ ad_page_contract {
 # the files in the filesystem otherwise jump to the admin page
 set fs_root [string trimright [parameter::get -parameter fs_root] /]
 
-if {[string equal "$fs_root/" "/www[ad_conn package_url]"]
-    && [file isdirectory "[acs_root_dir]$fs_root"] 
+if {"$fs_root/" eq "/www[ad_conn package_url]"
+    && [file isdirectory "[acs_root_dir]$fs_root"]
 } {
     set listing [rp_html_directory_listing [acs_root_dir]$fs_root]
 } else {
