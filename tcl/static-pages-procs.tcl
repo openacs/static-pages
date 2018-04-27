@@ -266,7 +266,7 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
 
     if { ! $run_p } {
         # Another copy is running, must abort:
-        set time_diff [expr [ns_time] -  $other_start_time]
+        set time_diff [expr {[ns_time] -  $other_start_time}]
 
         set other_time_pretty [ns_httptime $other_start_time]
         # Could also use: [clock format [clock seconds]]
@@ -309,7 +309,7 @@ ad_proc -private sp_sync_cr_with_filesystem_internal {
             # Chop the starting path off of the full pathname and split it up:
             set path [split [string range $file $fs_trimmed_length end] "/"]
             # Throw away the first entry (empty) and the last entry (which is the filename):
-            set path [lrange $path 1 [expr [llength $path]-2]]
+            set path [lrange $path 1 [expr {[llength $path]-2}]]
 
             set cumulative_path ""
             set parent_folder_id $root_folder_id
@@ -802,7 +802,7 @@ ad_proc -public sp_serve_html_page { } {
             #
             set body_close [string first "</body" [string tolower $file_contents]]
             if { $body_close >= 0 } {
-                set body "[string range $file_contents 0 [expr $body_close-1]]${comment_link}[string range $file_contents $body_close end]"
+                set body "[string range $file_contents 0 [expr {$body_close-1}]]${comment_link}[string range $file_contents $body_close end]"
             } else {
                 set body "${file_contents}$comment_link"
             }
