@@ -5,7 +5,7 @@ ad_page_contract {
     fs_root for this instance.  Otherwise simply redirect to
     admin.
 
-    this makes it possible to eg. create a static doc tree for
+    this makes it possible to e.g. create a static doc tree for
     a community mounted at example.com/c1 and if fs_root is set
     to /www/c1/static and static pages is mounted at example/c1/static 
     then the files in the static tree can simply be browsed.
