@@ -63,7 +63,7 @@ end;' language 'plpgsql';
 
 -- tree_sortkey triggers DaveB
 
-create function sp_folders_insert_tr () returns opaque as '
+create function sp_folders_insert_tr () returns trigger as '
 declare
         v_parent_sk     varbit default null;
         v_max_value     integer;
@@ -89,7 +89,7 @@ create trigger sp_folders_insert_tr before insert
 on sp_folders for each row 
 execute procedure sp_folders_insert_tr ();
 
-create function sp_folders_update_tr () returns opaque as '
+create function sp_folders_update_tr () returns trigger as '
 declare
         v_parent_sk     varbit default null;
         v_max_value     integer;
